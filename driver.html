@@ -265,17 +265,35 @@ function startGPS() {
         return;
     }
 
-    watchId =
-        navigator.geolocation.watchPosition(
-            sendLocation,
-            gpsError,
-            {
-                enableHighAccuracy: true,
-                maximumAge: 5000,
-                timeout: 10000
-            }
-        );
-}
+    navigator.geolocation.watchPosition(
+  function(position) {
+
+    const lat = position.coords.latitude;
+    const lng = position.coords.longitude;
+
+    fetch(API_URL + '?action=updateLocation'
+      + '&token=' + encodeURIComponent(token)
+      + '&lat=' + lat
+      + '&lng=' + lng
+    )
+    .then(res => res.json())
+    .then(data => {
+      console.log('Lokasi bus:', data);
+    })
+    .catch(err => {
+      console.error('Gagal update lokasi:', err);
+    });
+
+  },
+  function(error) {
+    console.error('GPS error:', error);
+  },
+  {
+    enableHighAccuracy: true,
+    maximumAge: 10000,
+    timeout: 15000
+  }
+);
 
 
 function stopGPS() {
