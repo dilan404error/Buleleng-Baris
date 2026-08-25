@@ -1,231 +1,1605 @@
 <!DOCTYPE html>
 <html lang="id">
-
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<meta charset="UTF-8">
+  <title>BusTrack - Live Map</title>
 
-<meta name="viewport"
-      content="width=device-width, initial-scale=1">
-
-<title>Bus Realtime</title>
-
-<link
+  <!-- LEAFLET CSS -->
+  <link
     rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  >
 
-<style>
+  <style>
 
-html,
-body {
+    * {
+      box-sizing: border-box;
+    }
 
-    margin: 0;
-    height: 100%;
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      font-family: Arial, Helvetica, sans-serif;
+      overflow: hidden;
+      background: #f3f4f6;
+    }
 
-}
 
-#map {
+    #map {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+    }
 
-    width: 100%;
-    height: 100%;
-}
+    .side-panel {
+      position: fixed;
 
-</style>
+      left: 18px;
+      top: 18px;
+      bottom: 18px;
+
+      width: 360px;
+
+      background: rgba(255,255,255,.97);
+
+      border-radius: 20px;
+
+      box-shadow:
+        0 10px 35px rgba(0,0,0,.20);
+
+      z-index: 1000;
+
+      display: flex;
+      flex-direction: column;
+
+      overflow: hidden;
+    }
+
+
+    .header {
+      padding: 20px;
+
+      background: #111827;
+
+      color: white;
+    }
+
+    .header-title {
+      font-size: 22px;
+      font-weight: 800;
+      margin: 0;
+    }
+
+    .header-subtitle {
+      margin-top: 5px;
+
+      font-size: 13px;
+
+      color: #cbd5e1;
+    }
+
+
+    .connection {
+
+      display: flex;
+
+      justify-content: space-between;
+
+      align-items: center;
+
+      padding: 12px 18px;
+
+      border-bottom: 1px solid #e5e7eb;
+
+      font-size: 13px;
+
+    }
+
+    .connected {
+      color: #16a34a;
+      font-weight: 700;
+    }
+
+    .disconnected {
+      color: #dc2626;
+      font-weight: 700;
+    }
+
+
+    #busList {
+
+      flex: 1;
+
+      overflow-y: auto;
+
+      padding: 10px;
+
+    }
+
+
+    .bus-card {
+
+      background: white;
+
+      border: 1px solid #e5e7eb;
+
+      border-radius: 16px;
+
+      margin-bottom: 10px;
+
+      padding: 14px;
+
+      cursor: pointer;
+
+      transition:
+        transform .15s ease,
+        box-shadow .15s ease,
+        border-color .15s ease;
+
+    }
+
+    .bus-card:hover {
+
+      transform: translateY(-2px);
+
+      border-color: #93c5fd;
+
+      box-shadow:
+        0 7px 20px rgba(0,0,0,.08);
+
+    }
+
+
+    .bus-card-top {
+
+      display: flex;
+
+      justify-content: space-between;
+
+      align-items: center;
+
+      margin-bottom: 12px;
+
+    }
+
+    .bus-number {
+
+      font-size: 18px;
+
+      font-weight: 800;
+
+      color: #111827;
+
+    }
+
+    .live-badge {
+
+      background: #dcfce7;
+
+      color: #15803d;
+
+      border-radius: 20px;
+
+      padding: 5px 9px;
+
+      font-size: 10px;
+
+      font-weight: 800;
+
+    }
+
+    .driver-section {
+
+      display: flex;
+
+      align-items: center;
+
+      gap: 12px;
+
+      margin-bottom: 12px;
+
+    }
+
+    .driver-photo {
+
+      width: 58px;
+
+      height: 58px;
+
+      border-radius: 50%;
+
+      object-fit: cover;
+
+      background: #e5e7eb;
+
+      border: 2px solid #e5e7eb;
+
+      flex-shrink: 0;
+
+    }
+
+    .driver-photo-placeholder {
+
+      width: 58px;
+
+      height: 58px;
+
+      border-radius: 50%;
+
+      background: #e5e7eb;
+
+      display: flex;
+
+      align-items: center;
+
+      justify-content: center;
+
+      font-size: 27px;
+
+      flex-shrink: 0;
+
+    }
+
+    .driver-info {
+
+      min-width: 0;
+
+    }
+
+    .driver-label {
+
+      font-size: 11px;
+
+      color: #6b7280;
+
+    }
+
+    .driver-name {
+
+      margin-top: 2px;
+
+      font-size: 15px;
+
+      font-weight: 800;
+
+      color: #111827;
+
+      white-space: nowrap;
+
+      overflow: hidden;
+
+      text-overflow: ellipsis;
+
+    }
+
+    .driver-id {
+
+      margin-top: 2px;
+
+      font-size: 11px;
+
+      color: #6b7280;
+
+    }
+
+
+    .details {
+
+      display: grid;
+
+      grid-template-columns: 1fr 1fr;
+
+      gap: 7px;
+
+    }
+
+    .detail {
+
+      background: #f9fafb;
+
+      border-radius: 9px;
+
+      padding: 8px;
+
+    }
+
+    .detail-label {
+
+      font-size: 10px;
+
+      color: #6b7280;
+
+    }
+
+    .detail-value {
+
+      margin-top: 2px;
+
+      font-size: 12px;
+
+      font-weight: 700;
+
+      color: #111827;
+
+    }
+
+
+    .empty {
+
+      padding: 45px 20px;
+
+      text-align: center;
+
+      color: #6b7280;
+
+      font-size: 13px;
+
+      line-height: 1.6;
+
+    }
+
+
+    .bus-icon {
+
+      width: 48px;
+
+      height: 48px;
+
+      border-radius: 50%;
+
+      background: #2563eb;
+
+      border: 4px solid white;
+
+      box-shadow:
+        0 4px 14px rgba(0,0,0,.35);
+
+      display: flex;
+
+      align-items: center;
+
+      justify-content: center;
+
+      font-size: 24px;
+
+    }
+
+
+    .popup-card {
+
+      min-width: 250px;
+
+      font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
+
+    }
+
+    .popup-title {
+
+      font-size: 18px;
+
+      font-weight: 800;
+
+      margin-bottom: 10px;
+
+    }
+
+    .popup-driver {
+
+      display: flex;
+
+      align-items: center;
+
+      gap: 9px;
+
+      margin-bottom: 10px;
+
+    }
+
+    .popup-photo {
+
+      width: 45px;
+
+      height: 45px;
+
+      border-radius: 50%;
+
+      object-fit: cover;
+
+      background: #e5e7eb;
+
+    }
+
+    .popup-driver-name {
+
+      font-weight: 800;
+
+    }
+
+    .popup-driver-id {
+
+      font-size: 11px;
+
+      color: #777;
+
+      margin-top: 2px;
+
+    }
+
+    .popup-row {
+
+      display: flex;
+
+      justify-content: space-between;
+
+      gap: 15px;
+
+      padding: 5px 0;
+
+      border-top: 1px solid #eee;
+
+      font-size: 12px;
+
+    }
+
+    .popup-label {
+
+      color: #777;
+
+    }
+
+    .popup-value {
+
+      font-weight: 700;
+
+      text-align: right;
+
+    }
+
+    .popup-live {
+
+      color: #16a34a;
+
+    }
+
+
+    @media (max-width: 700px) {
+
+      .side-panel {
+
+        left: 10px;
+        right: 10px;
+
+        top: 10px;
+
+        bottom: auto;
+
+        width: auto;
+
+        max-height: 48vh;
+
+        border-radius: 17px;
+
+      }
+
+      #busList {
+
+        max-height: 35vh;
+
+      }
+
+      .header {
+
+        padding: 15px;
+
+      }
+
+      .header-title {
+
+        font-size: 18px;
+
+      }
+
+    }
+
+  </style>
 
 </head>
 
+
 <body>
 
-<div id="map"></div>
 
-<script
+  <!-- =====================================================
+       MAP
+  ====================================================== -->
+
+  <div id="map"></div>
+
+
+  <!-- =====================================================
+       PANEL
+  ====================================================== -->
+
+  <aside class="side-panel">
+
+
+    <div class="header">
+
+      <div class="header-title">
+        🚌 BusTrack
+      </div>
+
+      <div class="header-subtitle">
+        Live Bus Tracking
+      </div>
+
+    </div>
+
+
+    <div class="connection">
+
+      <span id="connectionStatus">
+        Menghubungkan...
+      </span>
+
+      <span id="busCount">
+        0 bus
+      </span>
+
+    </div>
+
+
+    <div id="busList">
+
+      <div class="empty">
+        Memuat data bus...
+      </div>
+
+    </div>
+
+
+  </aside>
+
+
+  <script
     src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
-</script>
-
-<script>
-
-const API =
-    'https://script.google.com/macros/s/AKfycbxnFmL5CFPRinOb5mn1obnvRnoW__hLhxRZHy9vB-xBHc339VWZnP6rAIqc6nRt-wr1/exec';
+  </script>
 
 
-const map =
-    L.map('map')
-     .setView(
-         [-6.2, 106.816666],
-         11
-     );
+
+  <script>
 
 
-L.tileLayer(
-    'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    {
+    const API_URL =
+      "https://script.google.com/macros/s/AKfycbxnFmL5CFPRinOb5mn1obnvRnoW__hLhxRZHy9vB-xBHc339VWZnP6rAIqc6nRt-wr1/exec";
+
+
+    const map =
+      L.map("map", {
+        zoomControl: true
+      });
+
+
+    // Posisi awal Bali
+
+    map.setView(
+      [-8.4095, 115.1889],
+      10
+    );
+
+
+    // OpenStreetMap
+
+    L.tileLayer(
+      "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+      {
         maxZoom: 19,
+
         attribution:
-            '&copy; OpenStreetMap contributors'
-    }
-).addTo(map);
+          "&copy; OpenStreetMap contributors"
+
+      }
+    ).addTo(map);
 
 
-const markers =
-    {};
+    let busList = [];
+
+    let locationList = [];
+
+    let busMarkers = {};
+
+    let busDictionary = {};
 
 
-const busIcon =
-    L.divIcon({
+    const busIcon =
+      L.divIcon({
 
-        className: '',
+        className: "",
 
         html: `
-            <div style="
-                background:white;
-                width:44px;
-                height:44px;
-                border-radius:50%;
-                display:flex;
-                align-items:center;
-                justify-content:center;
-                font-size:27px;
-                box-shadow:0 2px 10px rgba(0,0,0,.3);
-                border:3px solid #222;
-            ">
-                🚌
-            </div>
+          <div class="bus-icon">
+            🚌
+          </div>
         `,
 
         iconSize: [
-            44,
-            44
+          48,
+          48
         ],
 
         iconAnchor: [
-            22,
-            22
+          24,
+          24
+        ],
+
+        popupAnchor: [
+          0,
+          -22
         ]
 
-    });
+      });
 
 
-async function loadLocations() {
+    function escapeHtml(value) {
 
-    try {
+      if (
+        value === null ||
+        value === undefined
+      ) {
 
-        const response =
-            await fetch(
-                API +
-                '?action=getLocations'
+        return "";
+
+      }
+
+
+      return String(value)
+
+        .replace(
+          /&/g,
+          "&amp;"
+        )
+
+        .replace(
+          /</g,
+          "&lt;"
+        )
+
+        .replace(
+          />/g,
+          "&gt;"
+        )
+
+        .replace(
+          /"/g,
+          "&quot;"
+        )
+
+        .replace(
+          /'/g,
+          "&#039;"
+        );
+
+    }
+
+
+    async function loadBuses() {
+
+      const url =
+        API_URL +
+        "?action=getBuses&t=" +
+        Date.now();
+
+
+      const response =
+        await fetch(url);
+
+
+      if (!response.ok) {
+
+        throw new Error(
+          "HTTP " +
+          response.status
+        );
+
+      }
+
+
+      const data =
+        await response.json();
+
+
+      console.log(
+        "GET BUSES:",
+        data
+      );
+
+
+      if (!data.ok) {
+
+        throw new Error(
+          data.error ||
+          "Gagal mendapatkan data bus."
+        );
+
+      }
+
+
+      busList =
+        Array.isArray(data.buses)
+          ? data.buses
+          : [];
+
+
+      busDictionary = {};
+
+
+      busList.forEach(
+        function(bus) {
+
+          const id =
+            String(
+              bus.bus_id || ""
+            ).trim();
+
+
+          if (id) {
+
+            busDictionary[id] =
+              bus;
+
+          }
+
+        }
+      );
+
+    }
+
+
+    async function loadLocations() {
+
+      const url =
+        API_URL +
+        "?action=getLocations&t=" +
+        Date.now();
+
+
+      const response =
+        await fetch(url);
+
+
+      if (!response.ok) {
+
+        throw new Error(
+          "HTTP " +
+          response.status
+        );
+
+      }
+
+
+      const data =
+        await response.json();
+
+
+      console.log(
+        "GET LOCATIONS:",
+        data
+      );
+
+
+      if (!data.ok) {
+
+        throw new Error(
+          data.error ||
+          "Gagal mendapatkan lokasi."
+        );
+
+      }
+
+
+      locationList =
+        Array.isArray(data.locations)
+          ? data.locations
+          : [];
+
+
+      updateMap();
+
+
+      updateBusCards();
+
+
+      setConnection(
+        true
+      );
+
+    }
+
+    function updateMap() {
+
+      const activeBusIds = {};
+
+
+      locationList.forEach(
+        function(location) {
+
+          const busId =
+            String(
+              location.bus_id || ""
+            ).trim();
+
+
+          if (!busId) {
+            return;
+          }
+
+
+          const lat =
+            Number(location.lat);
+
+
+          const lng =
+            Number(location.lng);
+
+
+          if (
+            !Number.isFinite(lat) ||
+            !Number.isFinite(lng)
+          ) {
+
+            return;
+
+          }
+
+
+          activeBusIds[busId] =
+            true;
+
+
+          const bus =
+            busDictionary[busId]
+            || {
+
+              bus_id: busId,
+
+              no_bus: busId,
+
+              plat: "-",
+
+              kapasitas: "-"
+
+            };
+
+
+          const popup =
+            createPopup(
+              bus,
+              location
             );
 
-        const data =
-            await response.json();
 
-        if (!data.ok) return;
+          if (
+            busMarkers[busId]
+          ) {
 
-        const activeIds =
-            new Set();
+            busMarkers[busId]
+              .setLatLng([
+                lat,
+                lng
+              ]);
 
-        for (
-            const bus
-            of data.locations
-        ) {
+            busMarkers[busId]
+              .setPopupContent(
+                popup
+              );
 
-            activeIds.add(
-                bus.bus_id
+          }
+
+
+          else {
+
+            const marker =
+              L.marker(
+                [
+                  lat,
+                  lng
+                ],
+                {
+                  icon:
+                    busIcon,
+
+                  title:
+                    "Bus " +
+                    (
+                      bus.no_bus ||
+                      busId
+                    )
+                }
+              );
+
+
+            marker
+              .addTo(map)
+              .bindPopup(
+                popup
+              );
+
+
+            busMarkers[busId] =
+              marker;
+
+          }
+
+        }
+      );
+
+
+      Object.keys(
+        busMarkers
+      ).forEach(
+        function(busId) {
+
+          if (
+            !activeBusIds[busId]
+          ) {
+
+            map.removeLayer(
+              busMarkers[busId]
             );
 
-            const position = [
-                bus.lat,
-                bus.lng
+            delete busMarkers[
+              busId
             ];
 
+          }
 
-            if (
-                markers[bus.bus_id]
-            ) {
+        }
+      );
 
-                markers[
-                    bus.bus_id
-                ].setLatLng(
-                    position
-                );
+    }
 
-            } else {
 
-                const marker =
-                    L.marker(
-                        position,
-                        {
-                            icon: busIcon
-                        }
-                    ).addTo(map);
+    function createPopup(
+      bus,
+      location
+    ) {
 
-                marker.bindPopup(`
-                    <div style="
-                        min-width:180px
-                    ">
+      const driverName =
+        location.driver_nama ||
+        "Driver";
 
-                        <h3>
-                            🚌 ${bus.bus_id}
-                        </h3>
 
-                        <p>
-                            Driver:
-                            ${bus.driver_id}
-                        </p>
+      const driverId =
+        location.driver_id ||
+        "-";
 
-                        <p>
-                            Status:
-                            🟢 Aktif
-                        </p>
 
-                    </div>
-                `);
+      const photo =
+        location.foto_url ||
+        "";
 
-                markers[
-                    bus.bus_id
-                ] = marker;
+
+      let photoHtml = "";
+
+
+      if (photo) {
+
+        photoHtml = `
+
+          <img
+            class="popup-photo"
+            src="${escapeHtml(photo)}"
+            onerror="
+              this.style.display='none'
+            "
+            alt="Foto driver"
+          >
+
+        `;
+
+      } else {
+
+        photoHtml = `
+
+          <div
+            class="popup-photo"
+            style="
+              display:flex;
+              align-items:center;
+              justify-content:center;
+              font-size:20px;
+            "
+          >
+            👤
+          </div>
+
+        `;
+
+      }
+
+
+      return `
+
+        <div class="popup-card">
+
+
+          <div class="popup-title">
+
+            🚌 Bus
+            ${escapeHtml(
+              bus.no_bus ||
+              bus.bus_id
+            )}
+
+          </div>
+
+
+          <div class="popup-driver">
+
+            ${photoHtml}
+
+            <div>
+
+              <div class="popup-driver-name">
+
+                ${escapeHtml(
+                  driverName
+                )}
+
+              </div>
+
+              <div class="popup-driver-id">
+
+                ID:
+                ${escapeHtml(
+                  driverId
+                )}
+
+              </div>
+
+            </div>
+
+          </div>
+
+
+          <div class="popup-row">
+
+            <span class="popup-label">
+              Bus ID
+            </span>
+
+            <span class="popup-value">
+              ${escapeHtml(
+                bus.bus_id ||
+                "-"
+              )}
+            </span>
+
+          </div>
+
+
+          <div class="popup-row">
+
+            <span class="popup-label">
+              Plat
+            </span>
+
+            <span class="popup-value">
+              ${escapeHtml(
+                bus.plat ||
+                "-"
+              )}
+            </span>
+
+          </div>
+
+
+          <div class="popup-row">
+
+            <span class="popup-label">
+              Kapasitas
+            </span>
+
+            <span class="popup-value">
+              ${escapeHtml(
+                bus.kapasitas ||
+                "-"
+              )}
+            </span>
+
+          </div>
+
+
+          <div class="popup-row">
+
+            <span class="popup-label">
+              Status
+            </span>
+
+            <span
+              class="popup-value popup-live"
+            >
+              ● LIVE
+            </span>
+
+          </div>
+
+
+        </div>
+
+      `;
+
+    }
+
+
+    function updateBusCards() {
+
+      const container =
+        document.getElementById(
+          "busList"
+        );
+
+
+      container.innerHTML = "";
+
+
+      if (
+        locationList.length === 0
+      ) {
+
+        container.innerHTML = `
+
+          <div class="empty">
+
+            🚌
+
+            <br>
+
+            <b>
+              Tidak ada bus yang sedang berjalan.
+            </b>
+
+            <br><br>
+
+            Driver harus login,
+            memilih bus,
+            lalu menekan
+            <b>ON</b>
+            agar bus muncul di sini.
+
+          </div>
+
+        `;
+
+
+        updateBusCount();
+
+        return;
+
+      }
+
+
+      locationList.forEach(
+        function(location) {
+
+          const busId =
+            String(
+              location.bus_id || ""
+            ).trim();
+
+
+          const bus =
+            busDictionary[busId]
+            || {
+
+              bus_id: busId,
+
+              no_bus: busId,
+
+              plat: "-",
+
+              kapasitas: "-"
+
+            };
+
+
+          const card =
+            document.createElement(
+              "div"
+            );
+
+
+          card.className =
+            "bus-card";
+
+
+          const driverName =
+            location.driver_nama ||
+            "Driver";
+
+
+          const driverId =
+            location.driver_id ||
+            "-";
+
+
+          const photo =
+            location.foto_url ||
+            "";
+
+
+          let photoHtml = "";
+
+
+          if (photo) {
+
+            photoHtml = `
+
+              <img
+                class="driver-photo"
+                src="${escapeHtml(photo)}"
+                alt="Foto ${escapeHtml(driverName)}"
+                onerror="
+                  this.outerHTML =
+                  '<div class=&quot;driver-photo-placeholder&quot;>👤</div>'
+                "
+              >
+
+            `;
+
+          } else {
+
+            photoHtml = `
+
+              <div
+                class="driver-photo-placeholder"
+              >
+                👤
+              </div>
+
+            `;
+
+          }
+
+
+          card.innerHTML = `
+
+            <div class="bus-card-top">
+
+              <div class="bus-number">
+
+                🚌
+                ${escapeHtml(
+                  bus.no_bus ||
+                  bus.bus_id
+                )}
+
+              </div>
+
+
+              <div class="live-badge">
+
+                ● LIVE
+
+              </div>
+
+            </div>
+
+
+            <div class="driver-section">
+
+              ${photoHtml}
+
+
+              <div class="driver-info">
+
+                <div class="driver-label">
+
+                  DRIVER
+
+                </div>
+
+
+                <div class="driver-name">
+
+                  ${escapeHtml(
+                    driverName
+                  )}
+
+                </div>
+
+
+                <div class="driver-id">
+
+                  ID:
+                  ${escapeHtml(
+                    driverId
+                  )}
+
+                </div>
+
+              </div>
+
+            </div>
+
+
+            <div class="details">
+
+
+              <div class="detail">
+
+                <div class="detail-label">
+                  BUS ID
+                </div>
+
+                <div class="detail-value">
+
+                  ${escapeHtml(
+                    bus.bus_id ||
+                    busId
+                  )}
+
+                </div>
+
+              </div>
+
+
+              <div class="detail">
+
+                <div class="detail-label">
+                  PLAT
+                </div>
+
+                <div class="detail-value">
+
+                  ${escapeHtml(
+                    bus.plat ||
+                    "-"
+                  )}
+
+                </div>
+
+              </div>
+
+
+              <div class="detail">
+
+                <div class="detail-label">
+                  KAPASITAS
+                </div>
+
+                <div class="detail-value">
+
+                  ${escapeHtml(
+                    bus.kapasitas ||
+                    "-"
+                  )}
+
+                </div>
+
+              </div>
+
+
+              <div class="detail">
+
+                <div class="detail-label">
+                  STATUS
+                </div>
+
+                <div
+                  class="detail-value"
+                  style="color:#16a34a"
+                >
+
+                  ● ONLINE
+
+                </div>
+
+              </div>
+
+
+            </div>
+
+          `;
+
+          card.addEventListener(
+            "click",
+            function() {
+
+              const marker =
+                busMarkers[busId];
+
+
+              if (!marker) {
+                return;
+              }
+
+
+              const position =
+                marker.getLatLng();
+
+
+              map.flyTo(
+                position,
+                16,
+                {
+                  duration: .8
+                }
+              );
+
+
+              setTimeout(
+                function() {
+
+                  marker.openPopup();
+
+                },
+                400
+              );
+
             }
+          );
+
+
+          container.appendChild(
+            card
+          );
+
+        }
+      );
+
+
+      updateBusCount();
+
+    }
+
+
+    function updateBusCount() {
+
+      const element =
+        document.getElementById(
+          "busCount"
+        );
+
+
+      element.textContent =
+        locationList.length +
+        " bus live";
+
+    }
+
+
+    function setConnection(
+      connected
+    ) {
+
+      const element =
+        document.getElementById(
+          "connectionStatus"
+        );
+
+
+      if (connected) {
+
+        element.innerHTML = `
+
+          <span class="connected">
+            ● Terhubung
+          </span>
+
+        `;
+
+      } else {
+
+        element.innerHTML = `
+
+          <span class="disconnected">
+            ● Terputus
+          </span>
+
+        `;
+
+      }
+
+    }
+
+    async function init() {
+
+      try {
+
+        setConnection(
+          false
+        );
+
+
+        await loadBuses();
+
+
+        await loadLocations();
+
+
+      } catch (error) {
+
+        console.error(
+          "INIT ERROR:",
+          error
+        );
+
+
+        setConnection(
+          false
+        );
+
+
+        document.getElementById(
+          "busList"
+        ).innerHTML = `
+
+          <div class="empty">
+
+            ❌
+
+            <br><br>
+
+            <b>
+              Gagal terhubung ke server.
+            </b>
+
+            <br><br>
+
+            ${escapeHtml(
+              error.message
+            )}
+
+          </div>
+
+        `;
+
+      }
+
+    }
+
+
+    setInterval(
+      async function() {
+
+        try {
+
+          await loadBuses();
+
+          await loadLocations();
+
+        } catch (error) {
+
+          console.error(
+            "REFRESH ERROR:",
+            error
+          );
+
+          setConnection(
+            false
+          );
+
         }
 
-
-        // Hapus marker yang sudah offline
-
-        Object.keys(
-            markers
-        ).forEach(
-            id => {
-
-                if (
-                    !activeIds.has(id)
-                ) {
-
-                    map.removeLayer(
-                        markers[id]
-                    );
-
-                    delete markers[id];
-                }
-            }
-        );
-
-    } catch (error) {
-
-        console.log(
-            'Gagal mengambil lokasi',
-            error
-        );
-    }
-}
+      },
+      5000
+    );
 
 
-loadLocations();
+    init();
 
-setInterval(
-    loadLocations,
-    5000
-);
-
-</script>
+  </script>
 
 </body>
-
 </html>
