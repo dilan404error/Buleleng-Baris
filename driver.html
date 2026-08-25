@@ -2,22 +2,133 @@
 <html lang="id">
 
 <head>
-
 <meta charset="UTF-8">
 
 <meta name="viewport"
       content="width=device-width, initial-scale=1">
 
-<title>Driver</title>
+<title>BusTrack - Driver</title>
 
 <link rel="stylesheet"
       href="style.css">
+
+<style>
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+}
+
+.driver-page {
+    max-width: 500px;
+    margin: auto;
+    padding: 15px;
+}
+
+.topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+}
+
+.topbar strong {
+    font-size: 22px;
+}
+
+.logout {
+    border: none;
+    padding: 10px 15px;
+    border-radius: 10px;
+    cursor: pointer;
+}
+
+.profile-card,
+.work-card,
+.location-card {
+    background: white;
+    border-radius: 18px;
+    padding: 20px;
+    margin-bottom: 15px;
+    box-shadow: 0 5px 20px rgba(0,0,0,.08);
+}
+
+.avatar {
+    font-size: 50px;
+    text-align: center;
+}
+
+.profile-card h2 {
+    text-align: center;
+    margin-bottom: 5px;
+}
+
+.profile-card p {
+    text-align: center;
+    color: #777;
+}
+
+.bus-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f4f6f8;
+    padding: 15px;
+    border-radius: 12px;
+    margin-top: 15px;
+}
+
+#status {
+    font-weight: bold;
+}
+
+.work-card {
+    text-align: center;
+}
+
+#workStatus {
+    font-size: 22px;
+    font-weight: bold;
+    margin: 15px 0;
+}
+
+#workButton {
+    width: 100%;
+    padding: 15px;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.location-card h3 {
+    margin-top: 0;
+}
+
+#gps {
+    color: #666;
+    word-break: break-word;
+}
+
+.map-button {
+    display: block;
+    text-align: center;
+    text-decoration: none;
+    background: #111827;
+    color: white;
+    padding: 15px;
+    border-radius: 12px;
+    font-weight: bold;
+}
+</style>
 
 </head>
 
 <body>
 
 <div class="driver-page">
+
+    <!-- TOPBAR -->
 
     <div class="topbar">
 
@@ -26,11 +137,15 @@
         <button
             class="logout"
             onclick="logout()">
+
             Keluar
+
         </button>
 
     </div>
 
+
+    <!-- PROFILE -->
 
     <div class="profile-card">
 
@@ -42,7 +157,9 @@
             Driver
         </h2>
 
-        <p id="username"></p>
+        <p id="username">
+            Memuat...
+        </p>
 
         <div class="bus-info">
 
@@ -51,7 +168,7 @@
             </strong>
 
             <span id="status">
-                OFFLINE
+                ⚪ OFFLINE
             </span>
 
         </div>
@@ -59,12 +176,14 @@
     </div>
 
 
+    <!-- WORK -->
+
     <div class="work-card">
 
         <p>Status kerja</p>
 
         <div id="workStatus">
-            OFFLINE
+            ⚪ OFFLINE
         </div>
 
         <button
@@ -78,9 +197,13 @@
     </div>
 
 
+    <!-- GPS -->
+
     <div class="location-card">
 
-        <h3>Lokasi GPS</h3>
+        <h3>
+            📍 Lokasi GPS
+        </h3>
 
         <p id="gps">
             GPS belum aktif
@@ -88,6 +211,8 @@
 
     </div>
 
+
+    <!-- MAP -->
 
     <a
         class="map-button"
@@ -102,158 +227,386 @@
 
 <script>
 
+/* =====================================================
+   API GOOGLE APPS SCRIPT
+   ===================================================== */
+
 const API =
     'https://script.google.com/macros/s/AKfycbxnFmL5CFPRinOb5mn1obnvRnoW__hLhxRZHy9vB-xBHc339VWZnP6rAIqc6nRt-wr1/exec';
 
+
+/* =====================================================
+   TOKEN LOGIN
+   ===================================================== */
+
 const token =
-    localStorage.getItem(
-        'bus_token'
-    );
+    localStorage.getItem('bus_token');
+
 
 if (!token) {
 
-    location.href =
+    window.location.href =
         'index.html';
+
 }
 
+
+/* =====================================================
+   VARIABLE
+   ===================================================== */
 
 let working = false;
 
 let watchId = null;
 
 
-// ==========================
-// PROFILE
-// ==========================
+/* =====================================================
+   HELPER API GET
+   ===================================================== */
 
-async function loadProfile() {
+async function apiGet(action, params = {}) {
+
+    const query =
+        new URLSearchParams();
+
+    query.append(
+        'action',
+        action
+    );
+
+    Object.keys(params).forEach(function(key) {
+
+        query.append(
+            key,
+            params[key]
+        );
+
+    });
 
     const response =
         await fetch(
-            API +
-            '?action=profile' +
-            '&token=' +
-            encodeURIComponent(token)
+            API + '?' + query.toString(),
+            {
+                method: 'GET',
+                cache: 'no-cache'
+            }
         );
 
-    const data =
-        await response.json();
+    if (!response.ok) {
 
-    if (!data.ok) {
+        throw new Error(
+            'HTTP ' + response.status
+        );
 
-        localStorage.clear();
-
-        location.href =
-            'index.html';
-
-        return;
     }
 
-    const driver =
-        data.driver;
+    return await response.json();
 
-    document.getElementById(
-        'nama'
-    ).textContent =
-        driver.nama;
-
-    document.getElementById(
-        'username'
-    ).textContent =
-        '@' + driver.username;
-
-    document.getElementById(
-        'bus'
-    ).textContent =
-        driver.bus_id;
-
-    setUI(
-        driver.status_kerja === 'ON'
-    );
 }
 
 
-// ==========================
-// UI
-// ==========================
+/* =====================================================
+   LOAD PROFILE
+   ===================================================== */
+
+async function loadProfile() {
+
+    try {
+
+        const data =
+            await apiGet(
+                'profile',
+                {
+                    token: token
+                }
+            );
+
+
+        if (!data.ok) {
+
+            alert(
+                data.error ||
+                'Session sudah tidak valid.'
+            );
+
+            localStorage.clear();
+
+            window.location.href =
+                'index.html';
+
+            return;
+
+        }
+
+
+        const driver =
+            data.driver;
+
+
+        /* NAMA */
+
+        document.getElementById(
+            'nama'
+        ).textContent =
+            driver.nama || 'Driver';
+
+
+        /* USERNAME */
+
+        document.getElementById(
+            'username'
+        ).textContent =
+            '@' +
+            (driver.username || '-');
+
+
+        /* BUS */
+
+        document.getElementById(
+            'bus'
+        ).textContent =
+            driver.bus_id ||
+            'Belum ada bus';
+
+
+        /* STATUS */
+
+        updateProfileStatus(
+            driver.status_kerja
+        );
+
+
+        /* STATUS KERJA */
+
+        setUI(
+            String(
+                driver.status_kerja || 'OFF'
+            ).toUpperCase() === 'ON'
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            'Profile error:',
+            error
+        );
+
+        document.getElementById(
+            'username'
+        ).textContent =
+            'Gagal memuat profil';
+
+    }
+
+}
+
+
+/* =====================================================
+   UPDATE STATUS PROFILE
+   ===================================================== */
+
+function updateProfileStatus(status) {
+
+    const element =
+        document.getElementById(
+            'status'
+        );
+
+    if (
+        String(status).toUpperCase() === 'ON'
+    ) {
+
+        element.textContent =
+            '🟢 ONLINE';
+
+        element.style.color =
+            'green';
+
+    } else {
+
+        element.textContent =
+            '⚪ OFFLINE';
+
+        element.style.color =
+            '#777';
+
+    }
+
+}
+
+
+/* =====================================================
+   UI STATUS KERJA
+   ===================================================== */
 
 function setUI(isWorking) {
 
     working =
         isWorking;
 
+
     const status =
         document.getElementById(
             'workStatus'
         );
+
 
     const button =
         document.getElementById(
             'workButton'
         );
 
+
+    const profileStatus =
+        document.getElementById(
+            'status'
+        );
+
+
     if (working) {
 
         status.textContent =
             '🟢 SEDANG BEKERJA';
 
+
         button.textContent =
             '🔴 SELESAI BEKERJA';
 
+
+        button.disabled =
+            false;
+
+
+        profileStatus.textContent =
+            '🟢 ONLINE';
+
+
+        profileStatus.style.color =
+            'green';
+
+
         startGPS();
+
 
     } else {
 
         status.textContent =
             '⚪ OFFLINE';
 
+
         button.textContent =
             '🟢 MULAI BEKERJA';
 
+
+        button.disabled =
+            false;
+
+
+        profileStatus.textContent =
+            '⚪ OFFLINE';
+
+
+        profileStatus.style.color =
+            '#777';
+
+
         stopGPS();
+
     }
+
 }
 
 
-// ==========================
-// TOGGLE
-// ==========================
+/* =====================================================
+   TOGGLE STATUS KERJA
+   ===================================================== */
 
 async function toggleWork() {
+
+    const button =
+        document.getElementById(
+            'workButton'
+        );
+
+
+    button.disabled =
+        true;
+
 
     const newStatus =
         working
             ? 'OFF'
             : 'ON';
 
-    const url =
-        API +
-        '?action=changeWorkStatus' +
-        '&token=' +
-        encodeURIComponent(token) +
-        '&status=' +
-        newStatus;
 
-    const response =
-        await fetch(url);
+    try {
 
-    const data =
-        await response.json();
+        const data =
+            await apiGet(
+                'changeWorkStatus',
+                {
+                    token: token,
+                    status: newStatus
+                }
+            );
 
-    if (data.ok) {
+
+        if (!data.ok) {
+
+            alert(
+                data.error ||
+                'Gagal mengubah status kerja.'
+            );
+
+            button.disabled =
+                false;
+
+            return;
+
+        }
+
 
         setUI(
             newStatus === 'ON'
         );
+
+
+    } catch (error) {
+
+        console.error(
+            'Status error:',
+            error
+        );
+
+
+        alert(
+            'Tidak dapat terhubung ke server.'
+        );
+
+
+        button.disabled =
+            false;
+
     }
+
 }
 
 
-// ==========================
-// GPS
-// ==========================
+/* =====================================================
+   START GPS
+   ===================================================== */
 
 function startGPS() {
+
+    /* Jangan bikin watcher GPS dobel */
+
+    if (watchId !== null) {
+
+        return;
+
+    }
+
 
     if (!navigator.geolocation) {
 
@@ -263,38 +616,86 @@ function startGPS() {
             'Browser tidak mendukung GPS.';
 
         return;
+
     }
 
-    navigator.geolocation.watchPosition(
-  function(position) {
 
-    const lat = position.coords.latitude;
-    const lng = position.coords.longitude;
+    document.getElementById(
+        'gps'
+    ).textContent =
+        '📡 Mencari lokasi GPS...';
 
-    fetch(API_URL + '?action=updateLocation'
-      + '&token=' + encodeURIComponent(token)
-      + '&lat=' + lat
-      + '&lng=' + lng
-    )
-    .then(res => res.json())
-    .then(data => {
-      console.log('Lokasi bus:', data);
-    })
-    .catch(err => {
-      console.error('Gagal update lokasi:', err);
-    });
 
-  },
-  function(error) {
-    console.error('GPS error:', error);
-  },
-  {
-    enableHighAccuracy: true,
-    maximumAge: 10000,
-    timeout: 15000
-  }
-);
+    watchId =
+        navigator.geolocation.watchPosition(
 
+            function(position) {
+
+                sendLocation(
+                    position
+                );
+
+            },
+
+            function(error) {
+
+                console.error(
+                    'GPS error:',
+                    error
+                );
+
+
+                let message =
+                    'GPS belum tersedia.';
+
+
+                if (error.code === 1) {
+
+                    message =
+                        'Izin lokasi ditolak. Aktifkan izin lokasi browser.';
+
+                }
+
+                else if (error.code === 2) {
+
+                    message =
+                        'Lokasi tidak tersedia.';
+
+                }
+
+                else if (error.code === 3) {
+
+                    message =
+                        'GPS timeout. Mencoba lagi...';
+
+                }
+
+
+                document.getElementById(
+                    'gps'
+                ).textContent =
+                    message;
+
+            },
+
+            {
+
+                enableHighAccuracy: true,
+
+                maximumAge: 10000,
+
+                timeout: 15000
+
+            }
+
+        );
+
+}
+
+
+/* =====================================================
+   STOP GPS
+   ===================================================== */
 
 function stopGPS() {
 
@@ -304,106 +705,144 @@ function stopGPS() {
             watchId
         );
 
-        watchId = null;
+        watchId =
+            null;
+
     }
+
 
     document.getElementById(
         'gps'
     ).textContent =
         'GPS tidak aktif';
+
 }
 
 
+/* =====================================================
+   SEND LOCATION
+   ===================================================== */
+
 async function sendLocation(position) {
 
-    if (!working) return;
+    if (!working) {
+
+        return;
+
+    }
+
 
     const lat =
         position.coords.latitude;
 
+
     const lng =
         position.coords.longitude;
+
+
+    const accuracy =
+        position.coords.accuracy;
+
 
     document.getElementById(
         'gps'
     ).textContent =
-        `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+        '📍 ' +
+        lat.toFixed(6) +
+        ', ' +
+        lng.toFixed(6) +
+        ' • ±' +
+        Math.round(accuracy) +
+        'm';
 
-    const form =
-        new URLSearchParams();
-
-    form.append(
-        'action',
-        'updateLocation'
-    );
-
-    form.append(
-        'token',
-        token
-    );
-
-    form.append(
-        'lat',
-        lat
-    );
-
-    form.append(
-        'lng',
-        lng
-    );
 
     try {
 
-        await fetch(
-            API,
+        const data =
+            await apiGet(
+                'updateLocation',
+                {
+                    token: token,
+                    lat: lat,
+                    lng: lng
+                }
+            );
+
+
+        console.log(
+            'Lokasi bus:',
+            data
+        );
+
+
+        if (!data.ok) {
+
+            console.error(
+                'Server menolak lokasi:',
+                data.error
+            );
+
+        }
+
+    } catch (error) {
+
+        console.error(
+            'Gagal mengirim lokasi:',
+            error
+        );
+
+    }
+
+}
+
+
+/* =====================================================
+   LOGOUT
+   ===================================================== */
+
+async function logout() {
+
+    stopGPS();
+
+
+    try {
+
+        await apiGet(
+            'logout',
             {
-                method: 'POST',
-                body: form
+                token: token
             }
         );
 
     } catch (error) {
 
-        console.log(
-            'GPS gagal dikirim',
+        console.error(
+            'Logout error:',
             error
         );
+
     }
-}
 
 
-function gpsError(error) {
-
-    document.getElementById(
-        'gps'
-    ).textContent =
-        'GPS belum tersedia.';
-}
+    localStorage.removeItem(
+        'bus_token'
+    );
 
 
-// ==========================
-// LOGOUT
-// ==========================
+    localStorage.removeItem(
+        'driver'
+    );
 
-async function logout() {
 
-    try {
-
-        await fetch(
-            API +
-            '?action=logout' +
-            '&token=' +
-            encodeURIComponent(token)
-        );
-
-    } catch (error) {}
-
-    localStorage.clear();
-
-    location.href =
+    window.location.href =
         'index.html';
+
 }
 
+
+/* =====================================================
+   START
+   ===================================================== */
 
 loadProfile();
 
