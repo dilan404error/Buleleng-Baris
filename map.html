@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+
+<html lang="id">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+content="width=device-width, initial-scale=1.0">
+
+<title>Live Bus Map</title>
+
+
+<link
+rel="stylesheet"
+href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+/>
+
+
+<style>
+
+html,
+body {
+
+    margin: 0;
+
+    height: 100%;
+
+}
+
+
+#map {
+
+    width: 100%;
+
+    height: 100%;
+
+}
+
+
+.panel {
+
+    position: fixed;
+
+    z-index: 999;
+
+    top: 20px;
+
+    left: 20px;
+
+    width: 300px;
+
+    background: white;
+
+    border-radius: 18px;
+
+    padding: 20px;
+
+    box-shadow:
+        0 5px 25px
+        rgba(0,0,0,.2);
+
+}
+
+
+.panel h2 {
+
+    margin-top: 0;
+
+}
+
+
+.bus-card {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 12px;
+
+    padding: 12px 0;
+
+    border-bottom:
+        1px solid #eee;
+
+    cursor: pointer;
+
+}
+
+
+.driver-photo {
+
+    width: 48px;
+
+    height: 48px;
+
+    border-radius: 50%;
+
+    object-fit: cover;
+
+    background: #ddd;
+
+}
+
+
+.bus-info {
+
+    flex: 1;
+
+}
+
+
+.bus-name {
+
+    font-weight: bold;
+
+}
+
+
+.driver-name {
+
+    color: #666;
+
+    font-size: 13px;
+
+}
+
+
+.status {
+
+    font-size: 12px;
+
+}
+
+
+.online {
+
+    color: green;
+
+}
+
+
+.bus-marker {
+
+    width: 48px;
+
+    height: 48px;
+
+    display: flex;
+
+    justify-content: center;
+
+    align-items: center;
+
+    font-size: 32px;
+
+    filter:
+        drop-shadow(
+            0 3px 5px
+            rgba(0,0,0,.4)
+        );
+
+}
+
+</style>
+
+</head>
+
+
+<body>
+
+
+<div class="panel">
+
+    <h2>
+        🚌 Live Bus
+    </h2>
+
+    <div id="busList">
+
+        Memuat bus...
+
+    </div>
+
+</div>
+
+
+<div id="map"></div>
+
+
+<script
+src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+</script>
+
+
+<script>
+
+
+/* ==============================
+   URL APPS SCRIPT
+============================== */
+
+const API_URL =
+"https://script.google.com/macros/s/GANTI_URL_KAMU/exec";
+
+
+/* ==============================
+   MAP
+============================== */
+
+const map =
+L.map('map')
+.setView(
+    [-8.115,115.088],
+    13
+);
+
+
+L.tileLayer(
+'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+{
+
+    maxZoom: 19,
+
+    attribution:
+    '&copy; OpenStreetMap'
+
+}).addTo(map);
+
+
+/* ==============================
+   MARKER BUS
+============================== */
+
+const markers = {};
+
+const previousPositions = {};
+
+
+/* ==============================
+   ICON
+============================== */
+
+function busIcon(
+    heading
+) {
+
+    return L.divIcon({
+
+        className: '',
+
+        html: `
+
+        <div
+        class="bus-marker"
+        style="
+        transform:
+        rotate(${heading}deg);
+        ">
+
+            🚌
+
+        </div>
+
+        `,
+
+        iconSize: [48,48],
+
+        iconAnchor: [24,24]
+
+    });
+
+}
+
+
+/* ==============================
+   GET DATA JSONP
+============================== */
+
+function loadBus() {
+
+    const callback =
+    'callback_' +
+    Date.now();
+
+
+    window[callback] =
+    function(data) {
+
+        console.log(data);
+
+        showBus(data);
+
+        delete window[callback];
+
+    };
+
+
+    const script =
+    document.createElement('script');
+
+
+    script.src =
+    API_URL +
+    '?action=get&callback=' +
+    callback;
+
+
+    script.onerror =
+    function() {
+
+        console.error(
+            'Gagal menghubungi Apps Script'
+        );
+
+    };
+
+
+    document.body.appendChild(script);
+
+}
+
+
+/* ==============================
+   TAMPILKAN BUS
+============================== */
+
+function showBus(data) {
+
+    const list =
+    document.getElementById(
+        'busList'
+    );
+
+
+    list.innerHTML = '';
+
+
+    data.forEach(
+    function(bus) {
+
+        const lat =
+        Number(bus.lat);
+
+        const lng =
+        Number(bus.lng);
+
+
+        if (
+            isNaN(lat) ||
+            isNaN(lng)
+        ) return;
+
+
+        /* ======================
+           MARKER
+        ====================== */
+
+        if (!markers[bus.bus_id]) {
+
+            markers[bus.bus_id] =
+
+            L.marker(
+                [lat,lng],
+                {
+                    icon:
+                    busIcon(
+                        bus.heading
+                    )
+                }
+            ).addTo(map);
+
+        }
+
+        else {
+
+            animateMarker(
+                bus.bus_id,
+                lat,
+                lng,
+                bus.heading
+            );
+
+        }
+
+
+        markers[
+            bus.bus_id
+        ].setPopupContent(`
+
+            <b>
+                🚌 ${bus.bus_id}
+            </b>
+
+            <br>
+
+            👨‍✈️
+            ${bus.driver_name}
+
+            <br>
+
+            📱
+            ${bus.driver_no}
+
+            <br>
+
+            🚗
+            ${bus.speed} km/h
+
+            <br>
+
+            🟢
+            ${bus.status}
+
+        `);
+
+
+        /* ======================
+           CARD
+        ====================== */
+
+        const card =
+        document.createElement(
+            'div'
+        );
+
+
+        card.className =
+        'bus-card';
+
+
+        card.innerHTML = `
+
+            <img
+            class="driver-photo"
+            src="${
+                bus.driver_photo ||
+                'https://via.placeholder.com/100'
+            }"
+            >
+
+            <div
+            class="bus-info">
+
+                <div
+                class="bus-name">
+
+                    🚌 ${bus.bus_id}
+
+                </div>
+
+                <div
+                class="driver-name">
+
+                    ${bus.driver_name}
+
+                </div>
+
+                <div
+                class="status online">
+
+                    🟢 ${bus.status}
+
+                    · ${bus.speed} km/h
+
+                </div>
+
+            </div>
+
+        `;
+
+
+        card.onclick =
+        function() {
+
+            map.setView(
+                [lat,lng],
+                17
+            );
+
+            markers[
+                bus.bus_id
+            ].openPopup();
+
+        };
+
+
+        list.appendChild(card);
+
+    });
+
+}
+
+
+/* ==============================
+   ANIMASI BUS
+============================== */
+
+function animateMarker(
+    id,
+    targetLat,
+    targetLng,
+    heading
+) {
+
+    const marker =
+    markers[id];
+
+
+    const start =
+    marker.getLatLng();
+
+
+    const startLat =
+    start.lat;
+
+    const startLng =
+    start.lng;
+
+
+    const duration =
+    1000;
+
+
+    const startTime =
+    performance.now();
+
+
+    function animate(
+        currentTime
+    ) {
+
+        const progress =
+        Math.min(
+            (currentTime -
+            startTime) /
+            duration,
+            1
+        );
+
+
+        const lat =
+        startLat +
+        (targetLat -
+        startLat) *
+        progress;
+
+
+        const lng =
+        startLng +
+        (targetLng -
+        startLng) *
+        progress;
+
+
+        marker.setLatLng(
+            [lat,lng]
+        );
+
+
+        marker.setIcon(
+            busIcon(heading)
+        );
+
+
+        if (
+            progress < 1
+        ) {
+
+            requestAnimationFrame(
+                animate
+            );
+
+        }
+
+    }
+
+
+    requestAnimationFrame(
+        animate
+    );
+
+}
+
+
+/* ==============================
+   START
+============================== */
+
+loadBus();
+
+
+/* ==============================
+   UPDATE 3 DETIK
+============================== */
+
+setInterval(
+    loadBus,
+    3000
+);
+
+
+</script>
+
+
+</body>
+
+</html>
