@@ -1,122 +1,138 @@
 <!DOCTYPE html>
 <html lang="id">
-
 <head>
 
 <meta charset="UTF-8">
-
 <meta name="viewport"
-content="width=device-width, initial-scale=1.0">
+      content="width=device-width, initial-scale=1">
 
-<title>Live Bus</title>
+<title>BusTrack - Login</title>
 
 <link rel="stylesheet"
-href="style.css">
+      href="style.css">
 
 </head>
 
 <body>
 
-<header>
+<div class="auth-container">
 
     <div class="logo">
-        🚌 Live Bus
+        🚌
     </div>
 
-    <nav>
+    <h1>BusTrack</h1>
 
-        <a href="index.html">
-            Beranda
-        </a>
+    <p class="subtitle">
+        Sistem monitoring bus realtime
+    </p>
 
-        <a href="map.html">
-            Peta
-        </a>
+    <div class="card">
 
-        <a href="driver.html">
-            Driver
-        </a>
+        <h2>Masuk</h2>
 
-    </nav>
+        <input
+            id="username"
+            placeholder="Username"
+            autocomplete="username">
 
-</header>
+        <input
+            id="password"
+            type="password"
+            placeholder="Password"
+            autocomplete="current-password">
 
+        <button onclick="login()">
+            MASUK
+        </button>
 
-<section class="hero">
+        <p id="message"></p>
 
-    <div>
-
-        <h1>
-            Pantau Bus Sekolah
-            Secara Real-Time
-        </h1>
-
-        <p>
-            Lihat posisi bus dan informasi
-            driver langsung melalui peta.
-        </p>
-
-        <a
-        href="map.html"
-        class="button">
-
-            Lihat Peta Bus
-
-        </a>
+        <div class="register-link">
+            Belum punya akun?
+            <a href="register.html">
+                Daftar sebagai driver
+            </a>
+        </div>
 
     </div>
 
-</section>
+</div>
 
+<script>
 
-<section class="features">
+const API =
+    'https://script.google.com/macros/s/AKfycbxnFmL5CFPRinOb5mn1obnvRnoW__hLhxRZHy9vB-xBHc339VWZnP6rAIqc6nRt-wr1/exec';
 
-    <div class="feature">
+async function login() {
 
-        <span>🚌</span>
+    const username =
+        document.getElementById('username')
+            .value.trim();
 
-        <h3>
-            Live Bus
-        </h3>
+    const password =
+        document.getElementById('password')
+            .value;
 
-        <p>
-            Pantau posisi bus.
-        </p>
+    const message =
+        document.getElementById('message');
 
-    </div>
+    if (!username || !password) {
 
+        message.textContent =
+            'Username dan password wajib diisi.';
 
-    <div class="feature">
+        return;
+    }
 
-        <span>📍</span>
+    message.textContent =
+        'Memproses...';
 
-        <h3>
-            GPS
-        </h3>
+    try {
 
-        <p>
-            Lokasi berdasarkan GPS driver.
-        </p>
+        const url =
+            API +
+            '?action=login' +
+            '&username=' +
+            encodeURIComponent(username) +
+            '&password=' +
+            encodeURIComponent(password);
 
-    </div>
+        const response =
+            await fetch(url);
 
+        const data =
+            await response.json();
 
-    <div class="feature">
+        if (!data.ok) {
 
-        <span>👨‍✈️</span>
+            message.textContent =
+                data.error;
 
-        <h3>
-            Driver
-        </h3>
+            return;
+        }
 
-        <p>
-            Lihat informasi driver.
-        </p>
+        localStorage.setItem(
+            'bus_token',
+            data.token
+        );
 
-    </div>
+        localStorage.setItem(
+            'bus_driver',
+            JSON.stringify(data.driver)
+        );
 
-</section>
+        location.href =
+            'driver.html';
+
+    } catch (error) {
+
+        message.textContent =
+            'Gagal terhubung ke server.';
+    }
+}
+
+</script>
 
 </body>
-
 </html>
