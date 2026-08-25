@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1">
+
+<title>Daftar Driver</title>
+
+<link rel="stylesheet"
+      href="style.css">
+
+</head>
+
+<body>
+
+<div class="auth-container">
+
+    <div class="logo">🚌</div>
+
+    <h1>Daftar Driver</h1>
+
+    <div class="card">
+
+        <input
+            id="nama"
+            placeholder="Nama lengkap">
+
+        <input
+            id="username"
+            placeholder="Username">
+
+        <input
+            id="password"
+            type="password"
+            placeholder="Password minimal 6 karakter">
+
+        <h3>Pilih Bus</h3>
+
+        <select id="bus">
+            <option value="">
+                Memuat bus...
+            </option>
+        </select>
+
+        <input
+            id="foto"
+            type="file"
+            accept="image/*">
+
+        <button onclick="register()">
+            DAFTAR
+        </button>
+
+        <p id="message"></p>
+
+        <div class="register-link">
+            Sudah punya akun?
+            <a href="index.html">
+                Login
+            </a>
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+
+const API =
+    'https://script.google.com/macros/s/AKfycbxnFmL5CFPRinOb5mn1obnvRnoW__hLhxRZHy9vB-xBHc339VWZnP6rAIqc6nRt-wr1/exec';
+
+
+async function loadBuses() {
+
+    try {
+
+        const response =
+            await fetch(
+                API + '?action=getBuses'
+            );
+
+        const data =
+            await response.json();
+
+        const select =
+            document.getElementById('bus');
+
+        select.innerHTML =
+            '<option value="">Pilih bus</option>';
+
+        data.buses.forEach(bus => {
+
+            if (
+                String(bus.status)
+                    .toUpperCase()
+                === 'TERSEDIA'
+            ) {
+
+                const option =
+                    document.createElement(
+                        'option'
+                    );
+
+                option.value =
+                    bus.bus_id;
+
+                option.textContent =
+                    `Bus ${bus.no_bus} - ${bus.plat} (${bus.kapasitas} kursi)`;
+
+                select.appendChild(option);
+            }
+        });
+
+    } catch (error) {
+
+        document.getElementById('bus')
+            .innerHTML =
+            '<option>Gagal memuat bus</option>';
+    }
+}
+
+
+async function register() {
+
+    const nama =
+        document.getElementById('nama')
+            .value.trim();
+
+    const username =
+        document.getElementById('username')
+            .value.trim();
+
+    const password =
+        document.getElementById('password')
+            .value;
+
+    const bus =
+        document.getElementById('bus')
+            .value;
+
+    const message =
+        document.getElementById('message');
+
+    if (
+        !nama ||
+        !username ||
+        !password ||
+        !bus
+    ) {
+
+        message.textContent =
+            'Lengkapi semua data.';
+
+        return;
+    }
+
+    message.textContent =
+        'Membuat akun...';
+
+    /*
+      Upload foto ke Google Drive membutuhkan
+      endpoint tambahan.
+
+      Untuk tahap pertama kita simpan
+      data akun dahulu.
+    */
+
+    try {
+
+        const url =
+            API +
+            '?action=register' +
+            '&nama=' +
+            encodeURIComponent(nama) +
+            '&username=' +
+            encodeURIComponent(username) +
+            '&password=' +
+            encodeURIComponent(password) +
+            '&bus_id=' +
+            encodeURIComponent(bus);
+
+        const response =
+            await fetch(url);
+
+        const data =
+            await response.json();
+
+        if (!data.ok) {
+
+            message.textContent =
+                data.error;
+
+            return;
+        }
+
+        alert(
+            'Akun berhasil dibuat!'
+        );
+
+        location.href =
+            'index.html';
+
+    } catch (error) {
+
+        message.textContent =
+            'Gagal terhubung ke server.';
+    }
+}
+
+
+loadBuses();
+
+</script>
+
+</body>
+</html>
