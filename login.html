@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta
+name="viewport"
+content="width=device-width, initial-scale=1.0">
+
+<title>Login Driver</title>
+
+<link
+rel="stylesheet"
+href="style.css">
+
+</head>
+
+
+<body class="auth-page">
+
+
+<div class="auth-box">
+
+
+<div class="auth-icon">
+🔐
+</div>
+
+
+<h1>
+Login Driver
+</h1>
+
+
+<p>
+Masuk untuk mengaktifkan GPS bus.
+</p>
+
+
+<label>
+Username
+</label>
+
+<input
+id="username"
+placeholder="Username"
+>
+
+
+<label>
+Password
+</label>
+
+
+<div class="password-box">
+
+<input
+id="password"
+type="password"
+placeholder="Password"
+>
+
+
+<button
+type="button"
+onclick="togglePassword()">
+
+👁️
+
+</button>
+
+</div>
+
+
+<button
+class="btn full"
+onclick="login()">
+
+Login
+
+</button>
+
+
+<div
+id="result"
+class="result">
+</div>
+
+
+<p class="switch">
+
+Belum punya akun?
+
+<a href="register.html">
+Daftar
+</a>
+
+</p>
+
+
+</div>
+
+
+<script>
+
+
+const API_URL =
+'https://script.google.com/macros/s/AKfycbxnFmL5CFPRinOb5mn1obnvRnoW__hLhxRZHy9vB-xBHc339VWZnP6rAIqc6nRt-wr1/exec';
+
+
+function api(
+action,
+params,
+callback
+) {
+
+const name =
+'cb_' +
+Date.now();
+
+
+window[name] =
+callback;
+
+
+const script =
+document.createElement(
+'script'
+);
+
+
+script.src =
+API_URL +
+'?action=' +
+action +
+params +
+'&callback=' +
+name;
+
+
+script.onerror =
+function() {
+
+document.getElementById(
+'result'
+).innerText =
+'❌ Server tidak dapat dihubungi.';
+
+};
+
+
+document.body.appendChild(
+script
+);
+
+}
+
+
+function togglePassword() {
+
+const input =
+document.getElementById(
+'password'
+);
+
+
+input.type =
+input.type ===
+'password'
+?
+'text'
+:
+'password';
+
+}
+
+
+function login() {
+
+const username =
+document.getElementById(
+'username'
+).value.trim();
+
+
+const password =
+document.getElementById(
+'password'
+).value;
+
+
+const result =
+document.getElementById(
+'result'
+);
+
+
+if (
+!username ||
+!password
+) {
+
+result.innerText =
+'Username dan password wajib diisi.';
+
+return;
+
+}
+
+
+result.innerText =
+'Memeriksa akun...';
+
+
+const params =
+
+'&username=' +
+encodeURIComponent(
+username
+) +
+
+'&password=' +
+encodeURIComponent(
+password
+);
+
+
+api(
+'login',
+params,
+function(data) {
+
+if (
+!data.success
+) {
+
+result.innerText =
+'❌ ' +
+data.message;
+
+return;
+
+}
+
+
+/*
+Simpan sesi sederhana
+untuk halaman driver.
+*/
+
+localStorage.setItem(
+'driverSession',
+JSON.stringify({
+
+driver:
+data.driver,
+
+bus:
+data.bus
+
+})
+);
+
+
+result.innerText =
+'✅ Login berhasil.';
+
+
+setTimeout(
+function() {
+
+window.location =
+'driver.html';
+
+},
+800
+);
+
+});
+
+}
+
+</script>
+
+</body>
+
+</html>
