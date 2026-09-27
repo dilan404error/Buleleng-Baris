@@ -1,138 +1,189 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
 
-<meta charset="UTF-8">
-<meta name="viewport"
-      content="width=device-width, initial-scale=1">
+    <meta charset="UTF-8">
 
-<title>BusTrack - Login</title>
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
 
-<link rel="stylesheet"
-      href="style.css">
+    <title>Live Bus</title>
+
+    <link rel="stylesheet"
+          href="style.css">
 
 </head>
 
 <body>
 
-<div class="auth-container">
+
+<header class="navbar">
 
     <div class="logo">
-        🚌
+        🚌 LIVE BUS
     </div>
 
-    <h1>BusTrack</h1>
+    <nav>
 
-    <p class="subtitle">
-        Sistem monitoring bus realtime
-    </p>
+        <a href="index.html">
+            Beranda
+        </a>
 
-    <div class="card">
+        <a href="map.html">
+            Peta Bus
+        </a>
 
-        <h2>Masuk</h2>
+        <a href="driver.html">
+            Driver
+        </a>
 
-        <input
-            id="username"
-            placeholder="Username"
-            autocomplete="username">
+        <a href="register.html">
+            Register
+        </a>
 
-        <input
-            id="password"
-            type="password"
-            placeholder="Password"
-            autocomplete="current-password">
+    </nav>
 
-        <button onclick="login()">
-            MASUK
-        </button>
+</header>
 
-        <p id="message"></p>
 
-        <div class="register-link">
-            Belum punya akun?
-            <a href="register.html">
-                Daftar sebagai driver
+<section class="hero">
+
+    <div class="hero-content">
+
+        <div class="hero-badge">
+            🟢 LIVE TRACKING
+        </div>
+
+        <h1>
+            Pantau Bus
+            <span>Secara Real-Time</span>
+        </h1>
+
+        <p>
+            Sistem pelacakan bus berbasis GPS
+            untuk melihat posisi bus,
+            informasi kendaraan, dan driver
+            secara langsung.
+        </p>
+
+        <div class="hero-buttons">
+
+            <a
+                href="map.html"
+                class="btn-primary">
+
+                🗺️ Lihat Peta Bus
+
             </a>
+
+            <a
+                href="driver.html"
+                class="btn-secondary">
+
+                📍 Mode Driver
+
+            </a>
+
         </div>
 
     </div>
 
-</div>
 
-<script>
+    <div class="hero-bus">
 
-const API =
-    'https://script.google.com/macros/s/AKfycbxnFmL5CFPRinOb5mn1obnvRnoW__hLhxRZHy9vB-xBHc339VWZnP6rAIqc6nRt-wr1/exec';
+        🚌
 
-async function login() {
+    </div>
 
-    const username =
-        document.getElementById('username')
-            .value.trim();
+</section>
 
-    const password =
-        document.getElementById('password')
-            .value;
 
-    const message =
-        document.getElementById('message');
+<section class="features">
 
-    if (!username || !password) {
+    <div class="feature-card">
 
-        message.textContent =
-            'Username dan password wajib diisi.';
+        <div class="feature-icon">
+            📍
+        </div>
 
-        return;
-    }
+        <h3>
+            GPS Real-Time
+        </h3>
 
-    message.textContent =
-        'Memproses...';
+        <p>
+            Posisi bus diperbarui
+            menggunakan GPS driver.
+        </p>
 
-    try {
+    </div>
 
-        const url =
-            API +
-            '?action=login' +
-            '&username=' +
-            encodeURIComponent(username) +
-            '&password=' +
-            encodeURIComponent(password);
 
-        const response =
-            await fetch(url);
+    <div class="feature-card">
 
-        const data =
-            await response.json();
+        <div class="feature-icon">
+            🚌
+        </div>
 
-        if (!data.ok) {
+        <h3>
+            Live Bus
+        </h3>
 
-            message.textContent =
-                data.error;
+        <p>
+            Lihat bus yang sedang
+            melakukan perjalanan.
+        </p>
 
-            return;
-        }
+    </div>
 
-        localStorage.setItem(
-            'bus_token',
-            data.token
-        );
 
-        localStorage.setItem(
-            'bus_driver',
-            JSON.stringify(data.driver)
-        );
+    <div class="feature-card">
 
-        location.href =
-            'driver.html';
+        <div class="feature-icon">
+            👨‍✈️
+        </div>
 
-    } catch (error) {
+        <h3>
+            Informasi Driver
+        </h3>
 
-        message.textContent =
-            'Gagal terhubung ke server.';
-    }
-}
+        <p>
+            Lihat nama dan foto
+            driver bus.
+        </p>
 
-</script>
+    </div>
+
+
+    <div class="feature-card">
+
+        <div class="feature-icon">
+            🗺️
+        </div>
+
+        <h3>
+            Live Map
+        </h3>
+
+        <p>
+            Pantau lokasi bus
+            langsung di peta.
+        </p>
+
+    </div>
+
+</section>
+
+
+<footer>
+
+    <p>
+        © 2026 Live Bus Tracking
+    </p>
+
+</footer>
+
 
 </body>
+
 </html>
