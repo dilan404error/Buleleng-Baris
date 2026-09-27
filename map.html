@@ -1,32 +1,31 @@
 <!DOCTYPE html>
-
 <html lang="id">
 
 <head>
 
-    <meta charset="UTF-8">
+<meta charset="UTF-8">
 
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0">
+<meta
+name="viewport"
+content="width=device-width, initial-scale=1.0">
 
-    <title>Live Bus Map</title>
-
-
-    <link
-        rel="stylesheet"
-        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    />
+<title>Live Bus Map</title>
 
 
-    <link
-        rel="stylesheet"
-        href="style.css"
-    />
+<link
+rel="stylesheet"
+href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+/>
+
+
+<link
+rel="stylesheet"
+href="style.css">
 
 </head>
 
 
-<body class="map-page">
+<body>
 
 
 <div id="map"></div>
@@ -35,935 +34,501 @@
 <div class="map-panel">
 
 
-    <div class="panel-header">
-
-        <div>
-
-            <div class="small-title">
-                LIVE TRACKING
-            </div>
-
-            <h2>
-                🚌 Bus
-            </h2>
-
-        </div>
-
-        <button
-            class="refresh-btn"
-            onclick="loadAllData()">
-
-            ↻
-
-        </button>
-
-    </div>
+<h2>
+🚌 Live Bus
+</h2>
 
 
-    <div
-        id="connectionStatus"
-        class="connection-status">
+<div
+id="connection"
+class="gps-status">
 
-        Menghubungkan...
-
-    </div>
-
-
-    <div
-        id="busList"
-        class="bus-list">
-
-        Memuat bus...
-
-    </div>
-
+Menghubungkan...
 
 </div>
 
 
 <div
-    class="map-info"
-    id="mapInfo">
+id="busList">
 
-    Pilih bus untuk melihat detail
+Memuat bus...
+
+</div>
+
 
 </div>
 
 
 <script
-    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
 </script>
 
 
 <script>
 
 
-/* =================================================
-   GANTI DENGAN URL WEB APP APPS SCRIPT
-================================================= */
-
 const API_URL =
-    "https://script.google.com/macros/s/AKfycbxnFmL5CFPRinOb5mn1obnvRnoW__hLhxRZHy9vB-xBHc339VWZnP6rAIqc6nRt-wr1/exec";
+'https://script.google.com/macros/s/AKfycbxnFmL5CFPRinOb5mn1obnvRnoW__hLhxRZHy9vB-xBHc339VWZnP6rAIqc6nRt-wr1/exec';
 
-
-/* =================================================
-   MAP
-================================================= */
 
 const map =
-    L.map('map')
-     .setView(
-         [-8.112, 115.088],
-         13
-     );
+L.map(
+'map'
+).setView(
+[-8.112,115.088],
+13
+);
 
 
 L.tileLayer(
-    'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    {
-        maxZoom: 19,
+'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+{
 
-        attribution:
-            '&copy; OpenStreetMap contributors'
-    }
-).addTo(map);
+maxZoom:
+19,
 
+attribution:
+'© OpenStreetMap'
 
-/* =================================================
-   DATA
-================================================= */
+}
+).addTo(
+map
+);
+
 
 let buses = [];
 
-let drivers = [];
-
 let locations = [];
+
+let drivers = [];
 
 let markers = {};
 
-let previousPosition = {};
 
-
-/* =================================================
-   ICON BUS
-================================================= */
-
-function createBusIcon() {
-
-    return L.divIcon({
-
-        className: 'custom-bus-icon',
-
-        html: `
-
-            <div class="bus-icon-wrapper">
-
-                🚌
-
-            </div>
-
-        `,
-
-        iconSize: [50, 50],
-
-        iconAnchor: [25, 25],
-
-        popupAnchor: [0, -25]
-
-    });
-
-}
-
-
-/* =================================================
-   JSONP
-================================================= */
-
-function requestJSONP(
-    action,
-    callbackFunction
+function api(
+action,
+callback
 ) {
 
-    const callbackName =
-        'jsonp_' +
-        Date.now() +
-        '_' +
-        Math.floor(
-            Math.random() * 10000
-        );
+const name =
+'map_' +
+Date.now() +
+Math.random();
 
 
-    window[callbackName] =
-        function(data) {
-
-            callbackFunction(data);
+window[name] =
+callback;
 
 
-            delete window[callbackName];
-
-            const oldScript =
-                document.getElementById(
-                    callbackName
-                );
-
-            if (oldScript) {
-
-                oldScript.remove();
-
-            }
-
-        };
+const script =
+document.createElement(
+'script'
+);
 
 
-    const script =
-        document.createElement(
-            'script'
-        );
+script.src =
+API_URL +
+'?action=' +
+action +
+'&callback=' +
+name;
 
 
-    script.id =
-        callbackName;
+script.onerror =
+function() {
+
+document.getElementById(
+'connection'
+).innerText =
+'🔴 Server gagal terhubung';
+
+};
 
 
-    script.src =
-        API_URL +
-        '?action=' +
-        action +
-        '&callback=' +
-        callbackName;
-
-
-    script.onerror =
-        function() {
-
-            document.getElementById(
-                'connectionStatus'
-            ).innerHTML =
-                '🔴 Server tidak terhubung';
-
-            delete window[callbackName];
-
-            script.remove();
-
-        };
-
-
-    document.body.appendChild(
-        script
-    );
+document.body.appendChild(
+script
+);
 
 }
 
 
-/* =================================================
-   LOAD BUS
-================================================= */
+function loadData() {
 
-function loadBus(
-    done
-) {
+api(
+'getBuses',
+function(busData) {
 
-    requestJSONP(
-        'bus',
-        function(data) {
-
-            if (
-                data &&
-                data.status === 'error'
-            ) {
-
-                console.error(
-                    data.message
-                );
-
-                done([]);
-
-                return;
-
-            }
+if (
+!busData.success
+) return;
 
 
-            buses = data || [];
-
-            done(buses);
-
-        }
-    );
-
-}
+buses =
+busData.buses;
 
 
-/* =================================================
-   LOAD DRIVER
-================================================= */
+api(
+'getLocations',
+function(locationData) {
 
-function loadDrivers(
-    done
-) {
-
-    requestJSONP(
-        'drivers',
-        function(data) {
-
-            if (
-                data &&
-                data.status === 'error'
-            ) {
-
-                console.error(
-                    data.message
-                );
-
-                done([]);
-
-                return;
-
-            }
+if (
+!locationData.success
+) return;
 
 
-            drivers = data || [];
+locations =
+locationData.locations;
 
-            done(drivers);
 
-        }
-    );
+api(
+'getDrivers',
+function(driverData) {
+
+if (
+!driverData.success
+) return;
+
+
+drivers =
+driverData.drivers;
+
+
+render();
+
+});
+
+});
+
+});
 
 }
 
-
-/* =================================================
-   LOAD LOCATION
-================================================= */
-
-function loadLocations(
-    done
-) {
-
-    requestJSONP(
-        'location',
-        function(data) {
-
-            if (
-                data &&
-                data.status === 'error'
-            ) {
-
-                console.error(
-                    data.message
-                );
-
-                done([]);
-
-                return;
-
-            }
-
-
-            locations =
-                data || [];
-
-            done(locations);
-
-        }
-    );
-
-}
-
-
-/* =================================================
-   LOAD SEMUA DATA
-================================================= */
-
-function loadAllData() {
-
-    document.getElementById(
-        'connectionStatus'
-    ).innerHTML =
-        '🟡 Mengambil data...';
-
-
-    loadBus(function() {
-
-        loadDrivers(function() {
-
-            loadLocations(function() {
-
-                renderBusList();
-
-                renderMarkers();
-
-
-                document.getElementById(
-                    'connectionStatus'
-                ).innerHTML =
-                    '🟢 Terhubung · Diperbarui ' +
-                    new Date()
-                        .toLocaleTimeString(
-                            'id-ID'
-                        );
-
-            });
-
-        });
-
-    });
-
-}
-
-
-/* =================================================
-   CARI DRIVER
-================================================= */
-
-function findDriver(
-    driverId
-) {
-
-    return drivers.find(
-        function(driver) {
-
-            return String(
-                driver.driver_id
-            ) === String(
-                driverId
-            );
-
-        }
-    );
-
-}
-
-
-/* =================================================
-   CARI LOKASI
-================================================= */
 
 function findLocation(
-    busId
+busId
 ) {
 
-    return locations.find(
-        function(location) {
+return locations.find(
+function(item) {
 
-            return String(
-                location.bus_id
-            ) === String(
-                busId
-            );
+return String(
+item.bus_id
+).trim() ===
+String(
+busId
+).trim();
 
-        }
-    );
+}
+);
 
 }
 
 
-/* =================================================
-   TAMPILKAN LIST BUS
-================================================= */
-
-function renderBusList() {
-
-    const list =
-        document.getElementById(
-            'busList'
-        );
-
-
-    list.innerHTML = '';
-
-
-    if (
-        buses.length === 0
-    ) {
-
-        list.innerHTML = `
-
-            <div class="empty">
-
-                Tidak ada data bus.
-
-            </div>
-
-        `;
-
-        return;
-
-    }
-
-
-    buses.forEach(
-        function(bus) {
-
-            const location =
-                findLocation(
-                    bus.bus_id
-                );
-
-
-            let driver = null;
-
-
-            if (location) {
-
-                driver =
-                    findDriver(
-                        location.driver_id
-                    );
-
-            }
-
-
-            const card =
-                document.createElement(
-                    'div'
-                );
-
-
-            card.className =
-                'bus-card';
-
-
-            let status =
-                'OFFLINE';
-
-
-            if (location) {
-
-                status =
-                    location.status ||
-                    'BERJALAN';
-
-            }
-
-
-            const isOnline =
-                location &&
-                location.lat &&
-                location.lng;
-
-
-            const photo =
-                driver &&
-                driver.foto
-                    ?
-                    driver.foto
-                    :
-                    'https://placehold.co/100x100?text=Driver';
-
-
-            card.innerHTML = `
-
-                <img
-                    class="driver-photo"
-                    src="${photo}"
-                    onerror="
-                        this.src=
-                        'https://placehold.co/100x100?text=Driver'
-                    "
-                >
-
-                <div class="bus-card-info">
-
-                    <div class="bus-card-title">
-
-                        🚌 ${bus.no_bus}
-
-                    </div>
-
-                    <div class="bus-plate">
-
-                        ${bus.plat}
-
-                    </div>
-
-                    <div class="bus-driver">
-
-                        ${
-                            driver
-                            ?
-                            driver.nama
-                            :
-                            'Driver belum terhubung'
-                        }
-
-                    </div>
-
-                    <div class="
-                        ${
-                            isOnline
-                            ?
-                            'status-online'
-                            :
-                            'status-offline'
-                        }
-                    ">
-
-                        ${
-                            isOnline
-                            ?
-                            '● ' + status
-                            :
-                            '● OFFLINE'
-                        }
-
-                    </div>
-
-                </div>
-
-                <div class="arrow">
-
-                    ›
-
-                </div>
-
-            `;
-
-
-            card.onclick =
-                function() {
-
-                    if (
-                        location &&
-                        !isNaN(
-                            location.lat
-                        ) &&
-                        !isNaN(
-                            location.lng
-                        )
-                    ) {
-
-                        focusBus(
-                            bus.bus_id
-                        );
-
-                    }
-
-                };
-
-
-            list.appendChild(
-                card
-            );
-
-        }
-    );
-
-}
-
-
-/* =================================================
-   MARKER BUS
-================================================= */
-
-function renderMarkers() {
-
-    buses.forEach(
-        function(bus) {
-
-            const location =
-                findLocation(
-                    bus.bus_id
-                );
-
-
-            if (
-                !location ||
-                isNaN(location.lat) ||
-                isNaN(location.lng)
-            ) {
-
-                return;
-
-            }
-
-
-            const lat =
-                Number(location.lat);
-
-
-            const lng =
-                Number(location.lng);
-
-
-            const driver =
-                findDriver(
-                    location.driver_id
-                );
-
-
-            if (
-                !markers[bus.bus_id]
-            ) {
-
-                markers[bus.bus_id] =
-                    L.marker(
-                        [lat, lng],
-                        {
-                            icon:
-                                createBusIcon()
-                        }
-                    ).addTo(map);
-
-
-            } else {
-
-                animateMarker(
-                    bus.bus_id,
-                    lat,
-                    lng
-                );
-
-            }
-
-
-            const photo =
-                driver &&
-                driver.foto
-                    ?
-                    driver.foto
-                    :
-                    'https://placehold.co/100x100?text=Driver';
-
-
-            markers[
-                bus.bus_id
-            ].setPopupContent(`
-
-                <div class="popup">
-
-                    <img
-                        class="popup-photo"
-                        src="${photo}"
-                    >
-
-                    <h3>
-
-                        🚌 ${bus.no_bus}
-
-                    </h3>
-
-                    <p>
-
-                        <b>
-                            ${bus.plat}
-                        </b>
-
-                    </p>
-
-                    <p>
-
-                        👨‍✈️
-                        ${
-                            driver
-                            ?
-                            driver.nama
-                            :
-                            'Belum ada driver'
-                        }
-
-                    </p>
-
-                    <p>
-
-                        🪪
-                        ${
-                            location.driver_id
-                            ||
-                            '-'
-                        }
-
-                    </p>
-
-                    <p>
-
-                        🟢
-                        ${
-                            location.status
-                            ||
-                            'OFFLINE'
-                        }
-
-                    </p>
-
-                    <p class="coordinates">
-
-                        📍
-                        ${lat.toFixed(6)},
-                        ${lng.toFixed(6)}
-
-                    </p>
-
-                </div>
-
-            `);
-
-        }
-    );
-
-}
-
-
-/* =================================================
-   ANIMASI BUS
-================================================= */
-
-function animateMarker(
-    busId,
-    targetLat,
-    targetLng
+function findDriver(
+driverId
 ) {
 
-    const marker =
-        markers[busId];
+return drivers.find(
+function(item) {
 
+return String(
+item.driver_id
+).trim() ===
+String(
+driverId
+).trim();
 
-    if (!marker) return;
-
-
-    const start =
-        marker.getLatLng();
-
-
-    const startLat =
-        start.lat;
-
-
-    const startLng =
-        start.lng;
-
-
-    const duration =
-        2000;
-
-
-    const startTime =
-        performance.now();
-
-
-    function animate(
-        currentTime
-    ) {
-
-        const progress =
-            Math.min(
-                (
-                    currentTime -
-                    startTime
-                ) / duration,
-                1
-            );
-
-
-        const lat =
-            startLat +
-            (
-                targetLat -
-                startLat
-            ) *
-            progress;
-
-
-        const lng =
-            startLng +
-            (
-                targetLng -
-                startLng
-            ) *
-            progress;
-
-
-        marker.setLatLng(
-            [lat, lng]
-        );
-
-
-        if (
-            progress < 1
-        ) {
-
-            requestAnimationFrame(
-                animate
-            );
-
-        }
-
-    }
-
-
-    requestAnimationFrame(
-        animate
-    );
+}
+);
 
 }
 
 
-/* =================================================
-   FOKUS BUS
-================================================= */
+function render() {
 
-function focusBus(
-    busId
+const list =
+document.getElementById(
+'busList'
+);
+
+
+list.innerHTML = '';
+
+
+let online =
+0;
+
+
+buses.forEach(
+function(bus) {
+
+const location =
+findLocation(
+bus.bus_id
+);
+
+
+let driver =
+null;
+
+
+if (
+location
 ) {
 
-    const location =
-        findLocation(
-            busId
-        );
-
-
-    if (!location) return;
-
-
-    map.flyTo(
-        [
-            Number(location.lat),
-            Number(location.lng)
-        ],
-        17,
-        {
-            duration: 1.2
-        }
-    );
-
-
-    if (
-        markers[busId]
-    ) {
-
-        setTimeout(
-            function() {
-
-                markers[
-                    busId
-                ].openPopup();
-
-            },
-            800
-        );
-
-    }
+driver =
+findDriver(
+location.driver_id
+);
 
 }
 
 
-/* =================================================
-   START
-================================================= */
+const card =
+document.createElement(
+'div'
+);
 
-loadAllData();
+
+card.className =
+'bus-card';
 
 
-/* =================================================
-   UPDATE SETIAP 5 DETIK
-================================================= */
+if (
+location &&
+!isNaN(
+location.lat
+) &&
+!isNaN(
+location.lng
+)
+) {
+
+online++;
+
+
+const lat =
+Number(
+location.lat
+);
+
+
+const lng =
+Number(
+location.lng
+);
+
+
+if (
+!markers[bus.bus_id]
+) {
+
+markers[
+bus.bus_id
+] =
+L.marker(
+[
+lat,
+lng
+],
+{
+
+icon:
+L.divIcon({
+
+className:
+'bus-marker',
+
+html:
+'🚌',
+
+iconSize:
+[40,40]
+
+})
+
+}
+).addTo(
+map
+);
+
+} else {
+
+markers[
+bus.bus_id
+].setLatLng(
+[
+lat,
+lng
+]
+);
+
+}
+
+
+markers[
+bus.bus_id
+].bindPopup(`
+
+<div class="popup">
+
+<img
+src="${
+driver &&
+driver.foto
+?
+driver.foto
+:
+'https://placehold.co/80x80'
+}"
+class="popup-photo"
+>
+
+<h3>
+🚌 ${bus.no_bus}
+</h3>
+
+<p>
+<b>
+${bus.plat}
+</b>
+</p>
+
+<p>
+👨‍✈️
+${
+driver
+?
+driver.nama
+:
+'Driver'
+}
+</p>
+
+<p>
+🪪
+${
+location.driver_id
+}
+</p>
+
+<p>
+🟢
+${location.status}
+</p>
+
+</div>
+
+`);
+
+}
+
+
+card.innerHTML = `
+
+<img
+src="${
+driver &&
+driver.foto
+?
+driver.foto
+:
+'https://placehold.co/60x60'
+}"
+class="driver-photo"
+>
+
+<div>
+
+<b>
+🚌 ${bus.no_bus}
+</b>
+
+<br>
+
+${bus.plat}
+
+<br>
+
+<span class="${
+location
+?
+'online'
+:
+'offline'
+}">
+
+● ${
+location
+?
+'BERJALAN'
+:
+'OFFLINE'
+}
+
+</span>
+
+</div>
+
+`;
+
+
+if (
+location
+) {
+
+card.onclick =
+function() {
+
+map.flyTo(
+[
+Number(
+location.lat
+),
+Number(
+location.lng
+)
+],
+17
+);
+
+
+markers[
+bus.bus_id
+].openPopup();
+
+};
+
+}
+
+
+list.appendChild(
+card
+);
+
+});
+
+
+document.getElementById(
+'connection'
+).innerText =
+
+'🟢 Terhubung · ' +
+online +
+' bus aktif';
+
+}
+
+
+loadData();
+
 
 setInterval(
-    loadAllData,
-    5000
+loadData,
+5000
 );
 
 </script>
-
 
 </body>
 
