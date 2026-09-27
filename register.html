@@ -1,219 +1,445 @@
 <!DOCTYPE html>
+
 <html lang="id">
 
 <head>
 
-<meta charset="UTF-8">
-<meta name="viewport"
-      content="width=device-width, initial-scale=1">
+    <meta charset="UTF-8">
 
-<title>Daftar Driver</title>
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0">
 
-<link rel="stylesheet"
-      href="style.css">
+    <title>Register Driver</title>
+
+    <link
+        rel="stylesheet"
+        href="style.css">
 
 </head>
 
-<body>
 
-<div class="auth-container">
+<body class="driver-page">
 
-    <div class="logo">🚌</div>
 
-    <h1>Daftar Driver</h1>
+<div class="driver-container">
 
-    <div class="card">
+
+    <div class="driver-box">
+
+
+        <div class="driver-header">
+
+            <div class="driver-icon">
+                👨‍✈️
+            </div>
+
+            <div>
+
+                <div class="small-title">
+                    DRIVER
+                </div>
+
+                <h1>
+                    Registrasi Driver
+                </h1>
+
+            </div>
+
+        </div>
+
+
+        <label>
+            ID Driver
+        </label>
+
+        <input
+            id="driverId"
+            placeholder="Contoh: DR001"
+        >
+
+
+        <label>
+            Nama Driver
+        </label>
 
         <input
             id="nama"
-            placeholder="Nama lengkap">
+            placeholder="Nama lengkap"
+        >
 
-        <input
-            id="username"
-            placeholder="Username">
 
-        <input
-            id="password"
-            type="password"
-            placeholder="Password minimal 6 karakter">
-
-        <h3>Pilih Bus</h3>
-
-        <select id="bus">
-            <option value="">
-                Memuat bus...
-            </option>
-        </select>
+        <label>
+            URL Foto Driver
+        </label>
 
         <input
             id="foto"
-            type="file"
-            accept="image/*">
+            placeholder="https://..."
+        >
 
-        <button onclick="register()">
-            DAFTAR
+
+        <label>
+            Bus
+        </label>
+
+        <select
+            id="busSelect">
+
+            <option>
+                Memuat bus...
+            </option>
+
+        </select>
+
+
+        <div
+            id="preview"
+            class="photo-preview">
+
+            Foto driver akan muncul di sini
+
+        </div>
+
+
+        <button
+            class="btn-primary full"
+            onclick="registerDriver()">
+
+            ✓ Daftarkan Driver
+
         </button>
 
-        <p id="message"></p>
 
-        <div class="register-link">
-            Sudah punya akun?
-            <a href="index.html">
-                Login
-            </a>
+        <div
+            id="result"
+            class="result">
+
         </div>
+
 
     </div>
 
 </div>
 
+
 <script>
 
-const API =
-    'https://script.google.com/macros/s/AKfycbxnFmL5CFPRinOb5mn1obnvRnoW__hLhxRZHy9vB-xBHc339VWZnP6rAIqc6nRt-wr1/exec';
+
+const API_URL =
+    "https://script.google.com/macros/s/AKfycbxnFmL5CFPRinOb5mn1obnvRnoW__hLhxRZHy9vB-xBHc339VWZnP6rAIqc6nRt-wr1/exec";
 
 
-async function loadBuses() {
+let buses = [];
 
-    try {
 
-        const response =
-            await fetch(
-                API + '?action=getBuses'
-            );
+/* =========================================
+   JSONP
+========================================= */
 
-        const data =
-            await response.json();
+function requestJSONP(
+    action,
+    callbackFunction,
+    params = ''
+) {
 
-        const select =
-            document.getElementById('bus');
+    const callbackName =
+        'register_' +
+        Date.now();
 
-        select.innerHTML =
-            '<option value="">Pilih bus</option>';
 
-        data.buses.forEach(bus => {
+    window[callbackName] =
+        function(data) {
 
-            if (
-                String(bus.status)
-                    .toUpperCase()
-                === 'TERSEDIA'
-            ) {
+            callbackFunction(data);
 
-                const option =
-                    document.createElement(
-                        'option'
-                    );
 
-                option.value =
-                    bus.bus_id;
+            delete window[
+                callbackName
+            ];
 
-                option.textContent =
-                    `Bus ${bus.no_bus} - ${bus.plat} (${bus.kapasitas} kursi)`;
 
-                select.appendChild(option);
+            const old =
+                document.getElementById(
+                    callbackName
+                );
+
+            if (old) {
+                old.remove();
             }
-        });
 
-    } catch (error) {
-
-        document.getElementById('bus')
-            .innerHTML =
-            '<option>Gagal memuat bus</option>';
-    }
-}
+        };
 
 
-async function register() {
-
-    const nama =
-        document.getElementById('nama')
-            .value.trim();
-
-    const username =
-        document.getElementById('username')
-            .value.trim();
-
-    const password =
-        document.getElementById('password')
-            .value;
-
-    const bus =
-        document.getElementById('bus')
-            .value;
-
-    const message =
-        document.getElementById('message');
-
-    if (
-        !nama ||
-        !username ||
-        !password ||
-        !bus
-    ) {
-
-        message.textContent =
-            'Lengkapi semua data.';
-
-        return;
-    }
-
-    message.textContent =
-        'Membuat akun...';
-
-    /*
-      Upload foto ke Google Drive membutuhkan
-      endpoint tambahan.
-
-      Untuk tahap pertama kita simpan
-      data akun dahulu.
-    */
-
-    try {
-
-        const url =
-            API +
-            '?action=register' +
-            '&nama=' +
-            encodeURIComponent(nama) +
-            '&username=' +
-            encodeURIComponent(username) +
-            '&password=' +
-            encodeURIComponent(password) +
-            '&bus_id=' +
-            encodeURIComponent(bus);
-
-        const response =
-            await fetch(url);
-
-        const data =
-            await response.json();
-
-        if (!data.ok) {
-
-            message.textContent =
-                data.error;
-
-            return;
-        }
-
-        alert(
-            'Akun berhasil dibuat!'
+    const script =
+        document.createElement(
+            'script'
         );
 
-        location.href =
-            'index.html';
 
-    } catch (error) {
+    script.id =
+        callbackName;
 
-        message.textContent =
-            'Gagal terhubung ke server.';
-    }
+
+    script.src =
+        API_URL +
+        '?action=' +
+        action +
+        params +
+        '&callback=' +
+        callbackName;
+
+
+    script.onerror =
+        function() {
+
+            document.getElementById(
+                'result'
+            ).innerHTML =
+                '🔴 Gagal terhubung ke server';
+
+            script.remove();
+
+        };
+
+
+    document.body.appendChild(
+        script
+    );
+
 }
 
+
+/* =========================================
+   LOAD BUS
+========================================= */
+
+function loadBuses() {
+
+    requestJSONP(
+        'bus',
+        function(data) {
+
+            if (
+                data.status ===
+                'error'
+            ) {
+
+                alert(
+                    data.message
+                );
+
+                return;
+
+            }
+
+
+            buses =
+                data || [];
+
+
+            const select =
+                document.getElementById(
+                    'busSelect'
+                );
+
+
+            select.innerHTML =
+                '<option value="">Pilih bus</option>';
+
+
+            buses.forEach(
+                function(bus) {
+
+                    const option =
+                        document.createElement(
+                            'option'
+                        );
+
+
+                    option.value =
+                        bus.bus_id;
+
+
+                    option.textContent =
+                        bus.no_bus +
+                        ' - ' +
+                        bus.plat;
+
+
+                    select.appendChild(
+                        option
+                    );
+
+                }
+            );
+
+        }
+    );
+
+}
+
+
+/* =========================================
+   FOTO PREVIEW
+========================================= */
+
+document.getElementById(
+    'foto'
+).addEventListener(
+    'input',
+    function() {
+
+        const url =
+            this.value.trim();
+
+
+        const preview =
+            document.getElementById(
+                'preview'
+            );
+
+
+        if (!url) {
+
+            preview.innerHTML =
+                'Foto driver akan muncul di sini';
+
+            return;
+
+        }
+
+
+        preview.innerHTML = `
+
+            <img
+                src="${url}"
+                class="preview-photo"
+                onerror="
+                    this.style.display='none';
+                "
+            >
+
+        `;
+
+    }
+);
+
+
+/* =========================================
+   REGISTER
+========================================= */
+
+function registerDriver() {
+
+    const driverId =
+        document.getElementById(
+            'driverId'
+        ).value.trim();
+
+
+    const nama =
+        document.getElementById(
+            'nama'
+        ).value.trim();
+
+
+    const foto =
+        document.getElementById(
+            'foto'
+        ).value.trim();
+
+
+    const busId =
+        document.getElementById(
+            'busSelect'
+        ).value;
+
+
+    const result =
+        document.getElementById(
+            'result'
+        );
+
+
+    if (
+        !driverId ||
+        !nama ||
+        !busId
+    ) {
+
+        result.innerHTML =
+            '⚠️ Lengkapi data driver.';
+
+        return;
+
+    }
+
+
+    result.innerHTML =
+        '🟡 Menyimpan data...';
+
+
+    const params =
+
+        '&driver_id=' +
+        encodeURIComponent(
+            driverId
+        ) +
+
+        '&nama=' +
+        encodeURIComponent(
+            nama
+        ) +
+
+        '&foto=' +
+        encodeURIComponent(
+            foto
+        ) +
+
+        '&bus_id=' +
+        encodeURIComponent(
+            busId
+        );
+
+
+    requestJSONP(
+        'register',
+        function(data) {
+
+            if (
+                data.status ===
+                'ok'
+            ) {
+
+                result.innerHTML =
+                    '🟢 Driver berhasil didaftarkan!';
+
+            }
+
+            else {
+
+                result.innerHTML =
+                    '🔴 ' +
+                    data.message;
+
+            }
+
+        },
+        params
+    );
+
+}
+
+
+/* =========================================
+   START
+========================================= */
 
 loadBuses();
 
 </script>
 
 </body>
+
 </html>
