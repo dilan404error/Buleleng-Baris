@@ -1,1051 +1,665 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
-  <meta charset="UTF-8">
 
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  >
-
-  <title>Live Location Bus</title>
-
-  <!-- Leaflet -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-  >
-
-  <style>
-
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: #f4f6f8;
-    }
-
-    header {
-      height: 65px;
-      background: #1976d2;
-      color: white;
-
-      display: flex;
-      align-items: center;
-
-      padding: 0 20px;
-
-      font-size: 22px;
-      font-weight: bold;
-    }
-
-    #map {
-      width: 100%;
-      height: calc(100vh - 65px);
-    }
-
-    .panel {
-
-      position: absolute;
-
-      z-index: 1000;
-
-      top: 80px;
-      left: 15px;
-
-      width: 320px;
-
-      background: white;
-
-      border-radius: 14px;
-
-      padding: 15px;
-
-      box-shadow:
-        0 4px 15px rgba(0,0,0,0.2);
-
-    }
-
-    .panel-title {
-      font-size: 18px;
-      font-weight: bold;
-      margin-bottom: 10px;
-    }
-
-    #status {
-      font-size: 13px;
-      color: #555;
-
-      margin-bottom: 10px;
-    }
-
-    .bus-item {
-
-      border: 1px solid #ddd;
-
-      border-radius: 10px;
-
-      padding: 10px;
-
-      margin-bottom: 8px;
-
-      cursor: pointer;
-
-      transition: 0.2s;
-
-    }
-
-    .bus-item:hover {
-      background: #f1f7ff;
-    }
-
-    .bus-name {
-      font-weight: bold;
-      font-size: 16px;
-    }
-
-    .bus-detail {
-      font-size: 13px;
-      color: #666;
-      margin-top: 4px;
-    }
-
-    .status {
-
-      display: inline-block;
-
-      margin-top: 5px;
-
-      padding: 3px 8px;
-
-      border-radius: 20px;
-
-      font-size: 11px;
-
-      background: #e8f5e9;
-
-      color: #2e7d32;
-
-    }
-
-    .bus-icon {
-
-      background: white;
-
-      border-radius: 50%;
-
-      width: 45px;
-
-      height: 45px;
-
-      display: flex;
-
-      align-items: center;
-
-      justify-content: center;
-
-      font-size: 27px;
-
-      border: 3px solid #1976d2;
-
-      box-shadow:
-        0 2px 8px rgba(0,0,0,0.3);
-
-    }
-
-    .leaflet-popup-content {
-      margin: 12px;
-    }
-
-    .popup-title {
-      font-size: 17px;
-      font-weight: bold;
-    }
-
-    .popup-line {
-      margin-top: 5px;
-      font-size: 13px;
-    }
-
-    .refresh {
-
-      width: 100%;
-
-      border: none;
-
-      background: #1976d2;
-
-      color: white;
-
-      padding: 10px;
-
-      border-radius: 8px;
-
-      cursor: pointer;
-
-      font-size: 14px;
-
-      margin-top: 5px;
-
-    }
-
-    .refresh:hover {
-      background: #125ca3;
-    }
-
-  </style>
+<meta charset="UTF-8">
+
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1"
+>
+
+<title>Live Bus</title>
+
+<link
+  rel="stylesheet"
+  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+>
+
+<style>
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+}
+
+#map {
+  width: 100%;
+  height: 100vh;
+}
+
+.panel {
+  position: fixed;
+  z-index: 1000;
+  top: 20px;
+  left: 20px;
+  width: 300px;
+  background: white;
+  padding: 18px;
+  border-radius: 15px;
+  box-shadow: 0 5px 20px rgba(0,0,0,.2);
+}
+
+.title {
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.status {
+  margin-top: 8px;
+  color: #666;
+}
+
+.bus-card {
+  margin-top: 12px;
+  padding: 12px;
+  background: #f4f6f8;
+  border-radius: 10px;
+}
+
+.bus-name {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.online {
+  color: #168a45;
+  font-size: 13px;
+  margin-top: 5px;
+}
+
+.bus-marker {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: white;
+  border: 3px solid #1976d2;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 30px;
+  box-shadow: 0 3px 10px rgba(0,0,0,.3);
+}
+
+.driver-photo {
+  width: 55px;
+  height: 55px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+</style>
 
 </head>
 
 <body>
 
-  <header>
-    🚌 Buleleng Bus Live Location
-  </header>
+<div class="panel">
 
-
-  <div class="panel">
-
-    <div class="panel-title">
-      Daftar Bus
-    </div>
-
-    <div id="status">
-      Menghubungkan ke server...
-    </div>
-
-    <div id="busList">
-      Memuat bus...
-    </div>
-
-    <button
-      class="refresh"
-      onclick="loadData()"
-    >
-      🔄 Refresh
-    </button>
-
+  <div class="title">
+    🚌 Bus Sedang Berjalan
   </div>
 
+  <div
+    id="status"
+    class="status"
+  >
+    Menghubungkan...
+  </div>
 
-  <div id="map"></div>
+  <div id="busList">
+    Memuat...
+  </div>
 
+</div>
 
-  <!-- Leaflet -->
-  <script
-    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
-  </script>
 
+<div id="map"></div>
 
-  <script>
 
-    /* =================================================
-       GOOGLE APPS SCRIPT
-    ================================================= */
+<script
+  src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+</script>
 
-    const API_URL =
-      "https://script.google.com/macros/s/AKfycbxnFmL5CFPRinOb5mn1obnvRnoW__hLhxRZHy9vB-xBHc339VWZnP6rAIqc6nRt-wr1/exec";
 
+<script>
 
-    /*
-     * CONTOH:
-     *
-     * https://script.google.com/macros/s/AKfycbxxxxxxxx/exec
-     *
-     * HARUS berakhir dengan /exec
-     */
+const API_URL =
+  "https://script.google.com/macros/s/AKfycbxnFmL5CFPRinOb5mn1obnvRnoW__hLhxRZHy9vB-xBHc339VWZnP6rAIqc6nRt-wr1/exec";
 
 
-    /* =================================================
-       MAP
-    ================================================= */
+const map =
+  L.map(
+    "map"
+  )
+  .setView(
+    [-8.112, 115.088],
+    12
+  );
 
-    const map =
-      L.map('map')
-       .setView(
-         [-8.112, 115.088],
-         12
-       );
 
+L.tileLayer(
+  "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+  {
 
-    L.tileLayer(
-      'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-      {
-        maxZoom: 19,
+    maxZoom: 19,
 
-        attribution:
-          '&copy; OpenStreetMap'
-      }
-    ).addTo(map);
+    attribution:
+      "&copy; OpenStreetMap"
 
+  }
+)
+.addTo(map);
 
-    /* =================================================
-       MARKER BUS
-    ================================================= */
 
-    const busMarkers = {};
+const markers = {};
 
 
-    const busIcon =
-      L.divIcon({
+const busIcon =
+  L.divIcon({
 
-        className: '',
+    className: "",
 
-        html:
-          '<div class="bus-icon">🚌</div>',
+    html:
+      '<div class="bus-marker">🚌</div>',
 
-        iconSize: [
-          45,
-          45
-        ],
+    iconSize:
+      [50, 50],
 
-        iconAnchor: [
-          22,
-          22
-        ],
+    iconAnchor:
+      [25, 25]
 
-        popupAnchor: [
-          0,
-          -22
-        ]
+  });
 
-      });
 
+// =================================================
+// JSONP
+// =================================================
 
-    /* =================================================
-       JSONP
-    ================================================= */
+function api(
+  action
+) {
 
-    function jsonp(
-      action,
-      params = {}
-    ) {
+  return new Promise(
+    function(resolve, reject) {
 
-      return new Promise(
-        function(resolve, reject) {
-
-          const callbackName =
-            'jsonp_' +
-            Date.now() +
-            '_' +
-            Math.floor(
-              Math.random() * 100000
-            );
-
-
-          const script =
-            document.createElement(
-              'script'
-            );
-
-
-          let finished = false;
-
-
-          const timeout =
-            setTimeout(
-              function() {
-
-                if (finished) {
-                  return;
-                }
-
-                finished = true;
-
-                cleanup();
-
-                reject(
-                  new Error(
-                    'Server timeout'
-                  )
-                );
-
-              },
-              15000
-            );
-
-
-          window[callbackName] =
-            function(data) {
-
-              if (finished) {
-                return;
-              }
-
-              finished = true;
-
-              clearTimeout(
-                timeout
-              );
-
-              cleanup();
-
-              resolve(data);
-
-            };
-
-
-          function cleanup() {
-
-            try {
-              delete window[
-                callbackName
-              ];
-            } catch (e) {}
-
-            if (
-              script.parentNode
-            ) {
-
-              script.parentNode
-                .removeChild(
-                  script
-                );
-
-            }
-
-          }
-
-
-          script.onerror =
-            function() {
-
-              if (finished) {
-                return;
-              }
-
-              finished = true;
-
-              clearTimeout(
-                timeout
-              );
-
-              cleanup();
-
-              reject(
-                new Error(
-                  'Gagal memuat Google Apps Script'
-                )
-              );
-
-            };
-
-
-          let url =
-            API_URL +
-            '?action=' +
-            encodeURIComponent(
-              action
-            );
-
-
-          /*
-           * Tambahkan parameter
-           */
-
-          Object.keys(params)
-            .forEach(
-              function(key) {
-
-                url +=
-                  '&' +
-                  encodeURIComponent(
-                    key
-                  ) +
-                  '=' +
-                  encodeURIComponent(
-                    params[key]
-                  );
-
-              }
-            );
-
-
-          url +=
-            '&callback=' +
-            callbackName;
-
-
-          script.src = url;
-
-
-          document.body.appendChild(
-            script
-          );
-
-        }
-      );
-
-    }
-
-
-    /* =================================================
-       LOAD DATA
-    ================================================= */
-
-    async function loadData() {
-
-      const status =
-        document.getElementById(
-          'status'
+      const callback =
+        "cb_" +
+        Date.now() +
+        "_" +
+        Math.floor(
+          Math.random() * 10000
         );
 
 
-      const busList =
-        document.getElementById(
-          'busList'
+      const script =
+        document.createElement(
+          "script"
         );
 
 
-      status.innerText =
-        'Menghubungkan ke server...';
+      let timer =
+        setTimeout(
+          function() {
+
+            cleanup();
+
+            reject(
+              new Error(
+                "Server timeout"
+              )
+            );
+
+          },
+          15000
+        );
 
 
-      busList.innerHTML =
-        'Memuat bus...';
+      window[callback] =
+        function(data) {
 
-
-      try {
-
-        /*
-         * Ambil bus DAN lokasi.
-         */
-
-        const busData =
-          await jsonp(
-            'getBuses'
+          clearTimeout(
+            timer
           );
 
+          cleanup();
+
+          resolve(data);
+
+        };
+
+
+      function cleanup() {
+
+        delete window[
+          callback
+        ];
 
         if (
-          !busData ||
-          !busData.success
+          script.parentNode
         ) {
 
-          throw new Error(
-
-            busData &&
-            busData.message
-              ? busData.message
-              : 'Data bus tidak valid'
-
-          );
-
-        }
-
-
-        const locationData =
-          await jsonp(
-            'getLocations'
-          );
-
-
-        if (
-          !locationData ||
-          !locationData.success
-        ) {
-
-          throw new Error(
-
-            locationData &&
-            locationData.message
-              ? locationData.message
-              : 'Data lokasi tidak valid'
-
-          );
-
-        }
-
-
-        /*
-         * Gabungkan data.
-         */
-
-        renderBuses(
-          busData.buses || [],
-          locationData.locations || []
-        );
-
-
-        status.innerText =
-          'Terhubung • ' +
-          (busData.buses || []).length +
-          ' bus ditemukan';
-
-
-      } catch (error) {
-
-        console.error(
-          'API ERROR:',
-          error
-        );
-
-
-        status.innerText =
-          '❌ Gagal terhubung';
-
-
-        busList.innerHTML = `
-
-          <div style="
-            color:#c62828;
-            font-size:13px;
-            line-height:1.5;
-          ">
-
-            <b>Gagal terhubung ke server.</b>
-
-            <br><br>
-
-            ${error.message}
-
-            <br><br>
-
-            Periksa URL Google Apps Script
-            dan deployment Web App.
-
-          </div>
-
-        `;
-
-      }
-
-    }
-
-
-    /* =================================================
-       RENDER BUS
-    ================================================= */
-
-    function renderBuses(
-      buses,
-      locations
-    ) {
-
-      const busList =
-        document.getElementById(
-          'busList'
-        );
-
-
-      busList.innerHTML = '';
-
-
-      /*
-       * Buat object lokasi berdasarkan bus_id
-       */
-
-      const locationMap = {};
-
-
-      locations.forEach(
-        function(location) {
-
-          locationMap[
-            String(
-              location.bus_id
-            ).trim()
-          ] = location;
-
-        }
-      );
-
-
-      /*
-       * Tampilkan SEMUA bus
-       *
-       * Walaupun belum punya GPS.
-       */
-
-      buses.forEach(
-        function(bus) {
-
-          const busId =
-            String(
-              bus.bus_id
-            ).trim();
-
-
-          const location =
-            locationMap[
-              busId
-            ];
-
-
-          const item =
-            document.createElement(
-              'div'
+          script.parentNode
+            .removeChild(
+              script
             );
 
-
-          item.className =
-            'bus-item';
-
-
-          item.innerHTML = `
-
-            <div class="bus-name">
-              🚌 ${escapeHTML(
-                bus.no_bus || bus.bus_id
-              )}
-            </div>
-
-            <div class="bus-detail">
-              ID:
-              ${escapeHTML(
-                bus.bus_id
-              )}
-            </div>
-
-            <div class="bus-detail">
-              Plat:
-              ${escapeHTML(
-                bus.plat || '-'
-              )}
-            </div>
-
-            <div class="bus-detail">
-
-              Status:
-              ${escapeHTML(
-                bus.status || '-'
-              )}
-
-            </div>
-
-          `;
-
-
-          if (location) {
-
-            item.innerHTML += `
-
-              <div class="bus-detail">
-
-                📍 GPS aktif
-
-              </div>
-
-            `;
-
-
-            item.onclick =
-              function() {
-
-                const lat =
-                  Number(
-                    location.lat
-                  );
-
-                const lng =
-                  Number(
-                    location.lng
-                  );
-
-
-                if (
-                  !isNaN(lat) &&
-                  !isNaN(lng)
-                ) {
-
-                  map.setView(
-                    [lat, lng],
-                    16
-                  );
-
-
-                  if (
-                    busMarkers[
-                      busId
-                    ]
-                  ) {
-
-                    busMarkers[
-                      busId
-                    ].openPopup();
-
-                  }
-
-                }
-
-              };
-
-          } else {
-
-            item.innerHTML += `
-
-              <div class="bus-detail">
-
-                📡 Menunggu lokasi GPS...
-
-              </div>
-
-            `;
-
-          }
-
-
-          busList.appendChild(
-            item
-          );
-
         }
-      );
-
-
-      /*
-       * Tampilkan marker lokasi.
-       */
-
-      locations.forEach(
-        function(location) {
-
-          updateBusMarker(
-            location,
-            buses
-          );
-
-        }
-      );
-
-    }
-
-
-    /* =================================================
-       MARKER
-    ================================================= */
-
-    function updateBusMarker(
-      location,
-      buses
-    ) {
-
-      const busId =
-        String(
-          location.bus_id
-        ).trim();
-
-
-      const lat =
-        Number(
-          location.lat
-        );
-
-
-      const lng =
-        Number(
-          location.lng
-        );
-
-
-      if (
-        isNaN(lat) ||
-        isNaN(lng)
-      ) {
-
-        return;
 
       }
 
 
-      let bus =
-        buses.find(
-          function(item) {
+      script.onerror =
+        function() {
 
-            return String(
-              item.bus_id
-            ).trim()
-            ===
-            busId;
+          clearTimeout(
+            timer
+          );
 
-          }
-        );
+          cleanup();
 
-
-      /*
-       * Kalau tidak ditemukan
-       * di database bus,
-       * tetap tampilkan marker.
-       */
-
-      const busName =
-        bus
-          ? (
-              bus.no_bus ||
-              bus.bus_id
+          reject(
+            new Error(
+              "Gagal terhubung ke server"
             )
-          : busId;
+          );
+
+        };
 
 
-      const plat =
-        bus
-          ? (
-              bus.plat ||
-              '-'
-            )
-          : '-';
+      script.src =
+        API_URL +
+        "?action=" +
+        action +
+        "&callback=" +
+        callback;
 
 
-      const popup = `
-
-        <div>
-
-          <div class="popup-title">
-
-            🚌 ${escapeHTML(
-              busName
-            )}
-
-          </div>
-
-          <div class="popup-line">
-
-            ID Bus:
-            ${escapeHTML(
-              busId
-            )}
-
-          </div>
-
-          <div class="popup-line">
-
-            Plat:
-            ${escapeHTML(
-              plat
-            )}
-
-          </div>
-
-          <div class="popup-line">
-
-            Driver:
-            ${escapeHTML(
-              location.driver_id ||
-              '-'
-            )}
-
-          </div>
-
-          <div class="popup-line">
-
-            Status:
-            ${escapeHTML(
-              location.status ||
-              '-'
-            )}
-
-          </div>
-
-          <div class="popup-line">
-
-            📍 ${lat.toFixed(6)},
-            ${lng.toFixed(6)}
-
-          </div>
-
-        </div>
-
-      `;
-
-
-      /*
-       * Kalau marker belum ada
-       */
-
-      if (
-        !busMarkers[busId]
-      ) {
-
-        busMarkers[busId] =
-          L.marker(
-            [lat, lng],
-            {
-              icon:
-                busIcon
-            }
-          )
-          .addTo(map);
-
-
-      } else {
-
-        /*
-         * Marker sudah ada.
-         * Geser ke koordinat baru.
-         */
-
-        busMarkers[busId]
-          .setLatLng([
-            lat,
-            lng
-          ]);
-
-      }
-
-
-      busMarkers[busId]
-        .bindPopup(
-          popup
-        );
-
-    }
-
-
-    /* =================================================
-       ESCAPE HTML
-    ================================================= */
-
-    function escapeHTML(
-      value
-    ) {
-
-      return String(
-        value ?? ''
-      )
-      .replace(
-        /&/g,
-        '&amp;'
-      )
-      .replace(
-        /</g,
-        '&lt;'
-      )
-      .replace(
-        />/g,
-        '&gt;'
-      )
-      .replace(
-        /"/g,
-        '&quot;'
-      )
-      .replace(
-        /'/g,
-        '&#039;'
+      document.body.appendChild(
+        script
       );
 
     }
+  );
+
+}
 
 
-    /* =================================================
-       AUTO REFRESH
-    ================================================= */
+// =================================================
+// LOAD ACTIVE BUS
+// =================================================
 
-    loadData();
+async function loadActiveBuses() {
 
-
-    /*
-     * Update setiap 5 detik.
-     */
-
-    setInterval(
-      loadData,
-      5000
+  const status =
+    document.getElementById(
+      "status"
     );
 
-  </script>
+
+  const list =
+    document.getElementById(
+      "busList"
+    );
+
+
+  try {
+
+    const result =
+      await api(
+        "getActiveLocations"
+      );
+
+
+    if (
+      !result.success
+    ) {
+
+      throw new Error(
+        result.message
+      );
+
+    }
+
+
+    const locations =
+      result.locations || [];
+
+
+    status.innerText =
+      locations.length +
+      " bus sedang berjalan";
+
+
+    /*
+     * Hapus marker yang sudah tidak aktif.
+     */
+
+    const activeIds =
+      {};
+
+
+    locations.forEach(
+      function(item) {
+
+        activeIds[
+          item.bus_id
+        ] = true;
+
+      }
+    );
+
+
+    Object.keys(
+      markers
+    )
+    .forEach(
+      function(busId) {
+
+        if (
+          !activeIds[busId]
+        ) {
+
+          map.removeLayer(
+            markers[busId]
+          );
+
+          delete markers[
+            busId
+          ];
+
+        }
+
+      }
+    );
+
+
+    list.innerHTML = "";
+
+
+    if (
+      locations.length === 0
+    ) {
+
+      list.innerHTML =
+
+        "<div style='margin-top:12px'>" +
+
+        "Tidak ada bus yang sedang berjalan." +
+
+        "</div>";
+
+      return;
+
+    }
+
+
+    locations.forEach(
+      function(bus) {
+
+        updateMarker(
+          bus
+        );
+
+
+        const card =
+          document.createElement(
+            "div"
+          );
+
+
+        card.className =
+          "bus-card";
+
+
+        card.innerHTML =
+
+          "<div class='bus-name'>" +
+
+          "🚌 " +
+
+          escapeHTML(
+            bus.no_bus
+          ) +
+
+          "</div>" +
+
+          "<div>" +
+
+          escapeHTML(
+            bus.plat
+          ) +
+
+          "</div>" +
+
+          "<div>" +
+
+          "Driver: " +
+
+          escapeHTML(
+            bus.driver_name
+          ) +
+
+          "</div>" +
+
+          "<div class='online'>" +
+
+          "🟢 Sedang berjalan" +
+
+          "</div>";
+
+
+        card.onclick =
+          function() {
+
+            map.setView(
+              [
+                Number(bus.lat),
+                Number(bus.lng)
+              ],
+              17
+            );
+
+
+            markers[
+              bus.bus_id
+            ].openPopup();
+
+          };
+
+
+        list.appendChild(
+          card
+        );
+
+      }
+    );
+
+
+  } catch (error) {
+
+    console.error(
+      error
+    );
+
+
+    status.innerText =
+      "❌ Gagal terhubung ke server";
+
+  }
+
+}
+
+
+// =================================================
+// MARKER
+// =================================================
+
+function updateMarker(
+  bus
+) {
+
+  const lat =
+    Number(
+      bus.lat
+    );
+
+
+  const lng =
+    Number(
+      bus.lng
+    );
+
+
+  if (
+    isNaN(lat) ||
+    isNaN(lng)
+  ) {
+
+    return;
+
+  }
+
+
+  const popup =
+
+    "<div>" +
+
+    "<b>🚌 " +
+
+    escapeHTML(
+      bus.no_bus
+    ) +
+
+    "</b>" +
+
+    "<br><br>" +
+
+    "Plat: " +
+
+    escapeHTML(
+      bus.plat
+    ) +
+
+    "<br>" +
+
+    "Driver: " +
+
+    escapeHTML(
+      bus.driver_name
+    ) +
+
+    "<br>" +
+
+    "Status: 🟢 Sedang berjalan" +
+
+    "<br>" +
+
+    "Lokasi diperbarui: " +
+
+    new Date(
+      bus.timestamp
+    ).toLocaleTimeString(
+      "id-ID"
+    ) +
+
+    "</div>";
+
+
+  if (
+    !markers[
+      bus.bus_id
+    ]
+  ) {
+
+    markers[
+      bus.bus_id
+    ] =
+      L.marker(
+        [lat, lng],
+        {
+          icon:
+            busIcon
+        }
+      )
+      .addTo(map);
+
+  } else {
+
+    markers[
+      bus.bus_id
+    ]
+    .setLatLng(
+      [lat, lng]
+    );
+
+  }
+
+
+  markers[
+    bus.bus_id
+  ]
+  .bindPopup(
+    popup
+  );
+
+}
+
+
+// =================================================
+// ESCAPE
+// =================================================
+
+function escapeHTML(
+  value
+) {
+
+  return String(
+    value ?? ""
+  )
+  .replace(
+    /&/g,
+    "&amp;"
+  )
+  .replace(
+    /</g,
+    "&lt;"
+  )
+  .replace(
+    />/g,
+    "&gt;"
+  )
+  .replace(
+    /"/g,
+    "&quot;"
+  )
+  .replace(
+    /'/g,
+    "&#039;"
+  );
+
+}
+
+
+// =================================================
+// START
+// =================================================
+
+loadActiveBuses();
+
+
+/*
+ * Update map setiap 5 detik.
+ */
+
+setInterval(
+  loadActiveBuses,
+  5000
+);
+
+</script>
 
 </body>
+
 </html>
