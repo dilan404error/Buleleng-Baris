@@ -6,279 +6,400 @@
 <meta charset="UTF-8">
 
 <meta
-name="viewport"
-content="width=device-width, initial-scale=1.0">
+  name="viewport"
+  content="width=device-width, initial-scale=1"
+>
 
 <title>Login Driver</title>
 
-<link
-rel="stylesheet"
-href="style.css">
+<style>
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #f3f6fa;
+}
+
+.container {
+  max-width: 430px;
+  margin: 80px auto;
+  padding: 20px;
+}
+
+.card {
+  background: white;
+  padding: 30px;
+  border-radius: 18px;
+  box-shadow: 0 5px 25px rgba(0,0,0,.1);
+}
+
+h1 {
+  text-align: center;
+}
+
+input {
+  width: 100%;
+  padding: 14px;
+  margin-top: 12px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  font-size: 16px;
+}
+
+.password-box {
+  position: relative;
+}
+
+.password-box input {
+  padding-right: 55px;
+}
+
+.show {
+  position: absolute;
+  right: 10px;
+  top: 23px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  width: auto;
+  padding: 5px;
+}
+
+button.login {
+  width: 100%;
+  margin-top: 20px;
+  padding: 15px;
+  border: none;
+  border-radius: 10px;
+  background: #1976d2;
+  color: white;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+#status {
+  margin-top: 15px;
+  padding: 12px;
+  border-radius: 10px;
+  background: #f1f3f5;
+}
+
+</style>
 
 </head>
 
+<body>
 
-<body class="auth-page">
+<div class="container">
 
-
-<div class="auth-box">
-
-
-<div class="auth-icon">
-🔐
-</div>
-
+<div class="card">
 
 <h1>
-Login Driver
+🚌 Login Driver
 </h1>
 
-
-<p>
-Masuk untuk mengaktifkan GPS bus.
-</p>
-
-
-<label>
-Username
-</label>
-
 <input
-id="username"
-placeholder="Username"
+  id="username"
+  type="text"
+  placeholder="Username"
 >
-
-
-<label>
-Password
-</label>
-
 
 <div class="password-box">
 
 <input
-id="password"
-type="password"
-placeholder="Password"
+  id="password"
+  type="password"
+  placeholder="Password"
 >
 
-
 <button
-type="button"
-onclick="togglePassword()">
-
+  class="show"
+  onclick="togglePassword()"
+>
 👁️
-
 </button>
 
 </div>
-
 
 <button
-class="btn full"
-onclick="login()">
-
-Login
-
+  class="login"
+  onclick="login()"
+>
+Masuk
 </button>
 
-
-<div
-id="result"
-class="result">
+<div id="status">
+  Silakan login.
 </div>
 
-
-<p class="switch">
-
-Belum punya akun?
-
-<a href="register.html">
-Daftar
-</a>
-
-</p>
-
+</div>
 
 </div>
 
 
 <script>
 
-
 const API_URL =
-'https://script.google.com/macros/s/AKfycbxnFmL5CFPRinOb5mn1obnvRnoW__hLhxRZHy9vB-xBHc339VWZnP6rAIqc6nRt-wr1/exec';
+  "https://script.google.com/macros/s/AKfycbxnFmL5CFPRinOb5mn1obnvRnoW__hLhxRZHy9vB-xBHc339VWZnP6rAIqc6nRt-wr1/exec";
+
+
+const SESSION_KEY =
+  "bus_driver_session_v2";
 
 
 function api(
-action,
-params,
-callback
+  action,
+  params = {}
 ) {
 
-const name =
-'cb_' +
-Date.now();
+  return new Promise(
+    function(resolve, reject) {
+
+      const callback =
+        "cb_" +
+        Date.now();
 
 
-window[name] =
-callback;
+      const script =
+        document.createElement(
+          "script"
+        );
 
 
-const script =
-document.createElement(
-'script'
-);
+      let timer =
+        setTimeout(
+          function() {
+
+            cleanup();
+
+            reject(
+              new Error(
+                "Server timeout."
+              )
+            );
+
+          },
+          15000
+        );
 
 
-script.src =
-API_URL +
-'?action=' +
-action +
-params +
-'&callback=' +
-name;
+      window[callback] =
+        function(data) {
+
+          clearTimeout(
+            timer
+          );
+
+          cleanup();
+
+          resolve(data);
+
+        };
 
 
-script.onerror =
-function() {
+      function cleanup() {
 
-document.getElementById(
-'result'
-).innerText =
-'❌ Server tidak dapat dihubungi.';
+        delete window[
+          callback
+        ];
 
-};
+        if (
+          script.parentNode
+        ) {
+
+          script.parentNode
+            .removeChild(
+              script
+            );
+
+        }
+
+      }
 
 
-document.body.appendChild(
-script
-);
+      script.onerror =
+        function() {
+
+          clearTimeout(
+            timer
+          );
+
+          cleanup();
+
+          reject(
+            new Error(
+              "Gagal terhubung ke server."
+            )
+          );
+
+        };
+
+
+      let url =
+        API_URL +
+        "?action=" +
+        action;
+
+
+      Object.keys(params)
+        .forEach(
+          function(key) {
+
+            url +=
+              "&" +
+              encodeURIComponent(
+                key
+              ) +
+              "=" +
+              encodeURIComponent(
+                params[key]
+              );
+
+          }
+        );
+
+
+      url +=
+        "&callback=" +
+        callback;
+
+
+      script.src = url;
+
+
+      document.body.appendChild(
+        script
+      );
+
+    }
+  );
 
 }
 
 
 function togglePassword() {
 
-const input =
-document.getElementById(
-'password'
-);
+  const input =
+    document.getElementById(
+      "password"
+    );
 
 
-input.type =
-input.type ===
-'password'
-?
-'text'
-:
-'password';
+  input.type =
+    input.type === "password"
+      ? "text"
+      : "password";
 
 }
 
 
-function login() {
+async function login() {
 
-const username =
-document.getElementById(
-'username'
-).value.trim();
-
-
-const password =
-document.getElementById(
-'password'
-).value;
+  const username =
+    document
+      .getElementById(
+        "username"
+      )
+      .value
+      .trim();
 
 
-const result =
-document.getElementById(
-'result'
-);
+  const password =
+    document
+      .getElementById(
+        "password"
+      )
+      .value;
 
 
-if (
-!username ||
-!password
-) {
-
-result.innerText =
-'Username dan password wajib diisi.';
-
-return;
-
-}
+  const status =
+    document.getElementById(
+      "status"
+    );
 
 
-result.innerText =
-'Memeriksa akun...';
+  if (
+    !username ||
+    !password
+  ) {
+
+    status.innerText =
+      "Username dan password wajib diisi.";
+
+    return;
+
+  }
 
 
-const params =
-
-'&username=' +
-encodeURIComponent(
-username
-) +
-
-'&password=' +
-encodeURIComponent(
-password
-);
+  status.innerText =
+    "Memeriksa akun...";
 
 
-api(
-'login',
-params,
-function(data) {
+  try {
 
-if (
-!data.success
-) {
+    const result =
+      await api(
+        "login",
+        {
+          username:
+            username,
 
-result.innerText =
-'❌ ' +
-data.message;
-
-return;
-
-}
+          password:
+            password
+        }
+      );
 
 
-/*
-Simpan sesi sederhana
-untuk halaman driver.
-*/
+    if (
+      !result.success
+    ) {
 
-localStorage.setItem(
-'driverSession',
-JSON.stringify({
+      status.innerText =
+        "❌ " +
+        result.message;
 
-driver:
-data.driver,
+      return;
 
-bus:
-data.bus
-
-})
-);
+    }
 
 
-result.innerText =
-'✅ Login berhasil.';
+    /*
+     * SIMPAN TOKEN + DATA AKUN
+     */
+
+    localStorage.setItem(
+      SESSION_KEY,
+      JSON.stringify({
+
+        token:
+          result.token,
+
+        driver:
+          result.driver,
+
+        bus:
+          result.bus
+
+      })
+    );
 
 
-setTimeout(
-function() {
+    status.innerText =
+      "✅ Login berhasil.";
 
-window.location =
-'driver.html';
 
-},
-800
-);
+    window.location.href =
+      "driver.html";
 
-});
+
+  } catch (error) {
+
+    status.innerText =
+      "❌ " +
+      error.message;
+
+  }
 
 }
 
